@@ -1737,7 +1737,7 @@ bool IGFX::applyPatch(const KernelPatcher::LookupPatch &patch, uint8_t *starting
 }
 
 bool IGFX::setDictUInt32(OSDictionary *dict, const char *key, UInt32 value) {
-    auto *num = OSNumber::withNumber(value, sizeof(UInt32));
+	auto *num = OSNumber::withNumber(value, sizeof(UInt32));
 	if (!num)
 		return false;
 	
@@ -1992,7 +1992,7 @@ void IGFX::applyFramebufferPatches() {
 			if (!framebufferPatches[i].find || !framebufferPatches[i].replace)
 				continue;
 
-			if (framebufferPatches[i].framebufferId != framebufferId)    {
+			if (framebufferPatches[i].framebufferId != framebufferId) {
 				framebufferId = framebufferPatches[i].framebufferId;
 				platformInformationAddress = findFramebufferId(framebufferId, static_cast<uint8_t *>(gPlatformInformationList), PAGE_SIZE);
 			}
