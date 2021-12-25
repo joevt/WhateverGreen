@@ -343,6 +343,7 @@ size_t WEG::wrapFunctionReturnZero() {
 }
 
 void WEG::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t address, size_t size) {
+	DBGLOG("weg", "[ WEG::processKext");
 	if (kextIOGraphics.loadIndex == index) {
 		gIOFBVerboseBootPtr = patcher.solveSymbol<uint8_t *>(index, "__ZL16gIOFBVerboseBoot", address, size);
 		if (gIOFBVerboseBootPtr) {
@@ -352,6 +353,7 @@ void WEG::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t ad
 			SYSLOG("weg", "failed to resolve gIOFBVerboseBoot");
 			patcher.clearError();
 		}
+		DBGLOG("weg", "] WEG::processKext kextIOGraphics");
 		return;
 	}
 
@@ -361,11 +363,13 @@ void WEG::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t ad
 			{"__ZN21AppleMCCSControlCello5probeEP9IOServicePi", wrapFunctionReturnZero},
 		};
 		patcher.routeMultiple(index, request, address, size);
+		DBGLOG("weg", "] WEG::processKext kextMCCSControl");
 		return;
 	}
 
 	if (kextAGDPolicy.loadIndex == index) {
 		processGraphicsPolicyMods(patcher, address, size);
+		DBGLOG("weg", "] WEG::processKext kextAGDPolicy");
 		return;
 	}
 
@@ -380,17 +384,27 @@ void WEG::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t ad
 		}
 	}
 
-	if (igfx.processKext(patcher, index, address, size))
+	if (igfx.processKext(patcher, index, address, size)) {
+		DBGLOG("weg", "] WEG::processKext igfx");
 		return;
+	}
 
-	if (ngfx.processKext(patcher, index, address, size))
+	if (ngfx.processKext(patcher, index, address, size)) {
+		DBGLOG("weg", "] WEG::processKext ngfx");
 		return;
+	}
 
-	if (rad.processKext(patcher, index, address, size))
+	if (rad.processKext(patcher, index, address, size)) {
+		DBGLOG("weg", "] WEG::processKext rad");
 		return;
+	}
 
-	if (getKernelVersion() < KernelVersion::BigSur && cdf.processKext(patcher, index, address, size))
+	if (getKernelVersion() < KernelVersion::BigSur && cdf.processKext(patcher, index, address, size)) {
+		DBGLOG("weg", "] WEG::processKext cdf");
 		return;
+	}
+
+	DBGLOG("weg", "] WEG::processKext");
 }
 
 void WEG::processBuiltinProperties(IORegistryEntry *device, DeviceInfo *info) {

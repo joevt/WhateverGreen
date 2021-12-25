@@ -21,6 +21,7 @@
 IGFX *IGFX::callbackIGFX;
 
 void IGFX::init() {
+	DBGLOG("igfx", "[ IGFX::init");
 	callbackIGFX = this;
 	// Initialize each submodule
 	for (auto submodule : submodules)
@@ -144,25 +145,36 @@ void IGFX::init() {
 			break;
 	}
 
-	if (currentGraphics)
+	if (currentGraphics) {
+		DBGLOG("igfx", "currentGraphics %s", currentGraphics->id);
 		lilu.onKextLoadForce(currentGraphics);
+	}
 
-	if (currentFramebuffer)
+	if (currentFramebuffer) {
+		DBGLOG("igfx", "currentFramebuffer %s", currentFramebuffer->id);
 		lilu.onKextLoadForce(currentFramebuffer);
+	}
 
-	if (currentFramebufferOpt)
+	if (currentFramebufferOpt) {
+		DBGLOG("igfx", "currentFramebufferOpt %s", currentFramebufferOpt->id);
 		lilu.onKextLoadForce(currentFramebufferOpt);
+	}
+
+	DBGLOG("igfx", "] IGFX::init");
 }
 
 void IGFX::deinit() {
 	// Deinitialize each submodule
+	DBGLOG("igfx", "[ IGFX::deinit");
 	for (auto submodule : submodules)
 		submodule->deinit();
 	for (auto submodule : sharedSubmodules)
 		submodule->deinit();
+	DBGLOG("igfx", "] IGFX::deinit");
 }
 
 void IGFX::processKernel(KernelPatcher &patcher, DeviceInfo *info) {
+	DBGLOG("weg", "[ IGFX::processKernel");
 	bool switchOffGraphics = false;
 	bool switchOffFramebuffer = false;
 	framebufferPatch.framebufferId = info->reportedFramebufferId;
@@ -259,6 +271,8 @@ void IGFX::processKernel(KernelPatcher &patcher, DeviceInfo *info) {
 		// Disable kext patching if we have nothing to do.
 		switchOffFramebuffer = !requiresFramebufferPatches() && !submodulesRequiresFramebufferPatch;
 		switchOffGraphics = !requiresGraphicsPatches() && !submodulesRequiresGraphicsPatch;
+
+		DBGLOG("weg", "switchOffFramebuffer:%d switchOffGraphics:%d", switchOffFramebuffer, switchOffGraphics);
 	} else {
 		switchOffGraphics = switchOffFramebuffer = true;
 	}
@@ -277,9 +291,11 @@ void IGFX::processKernel(KernelPatcher &patcher, DeviceInfo *info) {
 		KernelPatcher::RouteRequest request("__ZN9IOService20copyExistingServicesEP12OSDictionaryjj", wrapCopyExistingServices, orgCopyExistingServices);
 		patcher.routeMultiple(KernelPatcher::KernelID, &request, 1);
 	}
+	DBGLOG("weg", "] IGFX::processKernel");
 }
 
 bool IGFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t address, size_t size) {
+	DBGLOG("igfx", "[ IGFX::processKext");
 	auto cpuGeneration = BaseDeviceInfo::get().cpuGeneration;
 
 	if (currentGraphics && currentGraphics->loadIndex == index) {
@@ -321,6 +337,7 @@ bool IGFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t a
 			if (submodule->enabled)
 				submodule->processGraphicsKext(patcher, index, address, size);
 
+		DBGLOG("igfx", "] IGFX::processKext true");
 		return true;
 	}
 
@@ -383,9 +400,11 @@ bool IGFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t a
 				applyWestmerePatches(patcher);
 			}
 		}
+		DBGLOG("igfx", "] IGFX::processKext true");
 		return true;
 	}
 
+	DBGLOG("igfx", "] IGFX::processKext false");
 	return false;
 }
 
