@@ -2440,6 +2440,11 @@ private:
 	bool performingFirmwareLoad {false};
 
 	/**
+	 *  Work with already loaded kexts
+	 */
+	bool workWithAlreadyLoadedKexts {false};
+
+	/**
 	 *  Framebuffer address space start
 	 */
 	uint8_t *framebufferStart {nullptr};
@@ -2522,6 +2527,8 @@ private:
 	 *  IntelAccelerator::start wrapper to support vesa mode, force OpenGL, prevent fw loading, etc.
 	 */
 	static bool wrapAcceleratorStart(IOService *that, IOService *provider);
+
+	static void doFrameBufferStuff();
 
 	/**
 	 *  AppleIntelFramebufferController::getOSInformation wrapper to patch framebuffer data

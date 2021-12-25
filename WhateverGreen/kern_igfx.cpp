@@ -145,18 +145,29 @@ void IGFX::init() {
 			break;
 	}
 
+	workWithAlreadyLoadedKexts = checkKernelArgument("-igfxloaded");
+
 	if (currentGraphics) {
 		DBGLOG("igfx", "currentGraphics %s", currentGraphics->id);
+		if (workWithAlreadyLoadedKexts) {
+			currentGraphics->sys[KernelPatcher::KextInfo::Loaded] = true;
+		}
 		lilu.onKextLoadForce(currentGraphics);
 	}
 
 	if (currentFramebuffer) {
 		DBGLOG("igfx", "currentFramebuffer %s", currentFramebuffer->id);
+		if (workWithAlreadyLoadedKexts) {
+			currentFramebuffer->sys[KernelPatcher::KextInfo::Loaded] = true;
+		}
 		lilu.onKextLoadForce(currentFramebuffer);
 	}
 
 	if (currentFramebufferOpt) {
 		DBGLOG("igfx", "currentFramebufferOpt %s", currentFramebufferOpt->id);
+		if (workWithAlreadyLoadedKexts) {
+			currentFramebufferOpt->sys[KernelPatcher::KextInfo::Loaded] = true;
+		}
 		lilu.onKextLoadForce(currentFramebufferOpt);
 	}
 
@@ -388,6 +399,11 @@ bool IGFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t a
 
 				KernelPatcher::RouteRequest request(fbGetOSInformation, wrapGetOSInformation, orgGetOSInformation);
 				patcher.routeMultiple(index, &request, 1, address, size);
+
+				if (workWithAlreadyLoadedKexts) {
+					// I would prefer not to do this unless we were invoked for an already loaded kext
+					doFrameBufferStuff();
+				}
 			} else if (cpuGeneration >= CPUInfo::CpuGeneration::SandyBridge) {
 				SYSLOG("igfx", "failed to obtain gPlatformInformationList pointer with code %d", patcher.getError());
 				patcher.clearError();
@@ -1191,11 +1207,13 @@ bool IGFX::wrapAcceleratorStart(IOService *that, IOService *provider) {
 	return ret;
 }
 
-bool IGFX::wrapGetOSInformation(IOService *that) {
+void IGFX::doFrameBufferStuff() {
+	DBGLOG("igfx", "[ IGFX::doFrameBufferStuff");
 	auto cpuGeneration = BaseDeviceInfo::get().cpuGeneration;
 	
 #ifdef DEBUG
 	if (callbackIGFX->dumpFramebufferToDisk) {
+		DBGLOG("igfx", "IGFX::doFrameBufferStuff dumpFramebufferToDisk");
 		char name[64];
 		snprintf(name, sizeof(name), "/var/log/AppleIntelFramebuffer_%d_%d.%d", cpuGeneration, getKernelVersion(), getKernelMinorVersion());
 		FileIO::writeBufferToFile(name, callbackIGFX->framebufferStart, callbackIGFX->framebufferSize);
@@ -1207,22 +1225,35 @@ bool IGFX::wrapGetOSInformation(IOService *that) {
 #endif
 
 #ifdef DEBUG
-	if (callbackIGFX->dumpPlatformTable)
+	if (callbackIGFX->dumpPlatformTable) {
+		DBGLOG("igfx", "IGFX::doFrameBufferStuff dumpPlatformTable native");
 		callbackIGFX->writePlatformListData("platform-table-native");
+	}
 #endif
 
-	if (callbackIGFX->applyFramebufferPatch && cpuGeneration >= CPUInfo::CpuGeneration::SandyBridge)
+	if (callbackIGFX->applyFramebufferPatch && cpuGeneration >= CPUInfo::CpuGeneration::SandyBridge) {
+		DBGLOG("igfx", "IGFX::doFrameBufferStuff applyFramebufferPatch");
 		callbackIGFX->applyFramebufferPatches();
-	else if (callbackIGFX->applyFramebufferPatch && cpuGeneration == CPUInfo::CpuGeneration::Westmere)
-		callbackIGFX->applyWestmereFeaturePatches(that);
-	else if (callbackIGFX->hdmiAutopatch)
+	}
+	else if (callbackIGFX->hdmiAutopatch) {
+		DBGLOG("igfx", "IGFX::doFrameBufferStuff hdmiAutopatch");
 		callbackIGFX->applyHdmiAutopatch();
+	}
 
 #ifdef DEBUG
-	if (callbackIGFX->dumpPlatformTable)
+	if (callbackIGFX->dumpPlatformTable) {
+		DBGLOG("igfx", "IGFX::doFrameBufferStuff dumpPlatformTable patched");
 		callbackIGFX->writePlatformListData("platform-table-patched");
+	}
 #endif
+	DBGLOG("igfx", "] IGFX::doFrameBufferStuff");
+}
 
+bool IGFX::wrapGetOSInformation(IOService *that) {
+	auto cpuGeneration = BaseDeviceInfo::get().cpuGeneration;
+	doFrameBufferStuff();
+	if (callbackIGFX->applyFramebufferPatch && cpuGeneration == CPUInfo::CpuGeneration::Westmere)
+		callbackIGFX->applyWestmereFeaturePatches(that);
 	return FunctionCast(wrapGetOSInformation, callbackIGFX->orgGetOSInformation)(that);
 }
 

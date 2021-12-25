@@ -102,6 +102,7 @@ Read [FAQs](./Manual/) and avoid asking any questions. No support is provided fo
 | `-igfxfbdump` 		| N/A 	| Dump native and patched framebuffer table to ioreg at `IOService:/IOResources/WhateverGreen` 	|
 | `-igfxhdmidivs` 	| `enable-hdmi-dividers-fix` property on IGPU 	| Fix the infinite loop on establishing Intel HDMI connections with a higher pixel clock rate on SKL, KBL and CFL platforms 	|
 | `-igfxi2cdbg` 	  | N/A 	| Enable verbose output in I2C-over-AUX transactions (only for debugging purposes) 	|
+| `-igfxloaded` | N/A | Load kext patches even if kexts have already loaded. Use this when you can't or don't want to use LiluFriend, Clover, or OpenCore to load WhateverGreen early (such as with Big Sur). Only some features will work in this case, such as `-igfxfbdump`, `igfxmaxwidth=`, `igfxvgaclock`, and may require the display to be reconnected. |
 | `-igfxlspcon` 	  | `enable-lspcon-support` property on IGPU 	| Enable the driver support for onboard LSPCON chips.<br> [Read the manual](./Manual/FAQ.IntelHD.en.md#lspcon-driver-support-to-enable-displayport-to-hdmi-20-output-on-igpu) 	|
 | `-igfxmlr` 		    | `enable-dpcd-max-link-rate-fix` property on IGPU 	| Apply the maximum link rate fix 	|
 | `-igfxmpc` 		    | `enable-max-pixel-clock-override` and `max-pixel-clock-frequency` properties on IGPU 	| Increase max pixel clock (as an alternative to patching `CoreDisplay.framework` 	|
@@ -156,6 +157,7 @@ Read [FAQs](./Manual/) and avoid asking any questions. No support is provided fo
 - [hieplpvip](https://github.com/hieplpvip) for initial AppleBacklight patching plugin
 - [igork](https://applelife.ru/members/igork.564/) for power-gating patch discovery and various FP research
 - [lvs1974](https://applelife.ru/members/lvs1974.53809) for continuous implementation of Intel and NVIDIA fixing code
+- [joevt](https://github.com/joevt) for some additions
 - [mologie](https://github.com/mologie/NVWebDriverLibValFix) for creating NVWebDriverLibValFix.kext which forces macOS to recognize NVIDIA's web drivers as platform binaries
 - [PMheart](https://github.com/PMheart) for CoreDisplay patching code and Intel fix backporting
 - [RehabMan](https://github.com/RehabMan) for various enhancements
