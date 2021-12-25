@@ -2451,6 +2451,11 @@ private:
 	uint32_t maxTimingWidth {0};
 
 	/**
+	 *  Max pixel clock of VGA adapter
+	 */
+	uint32_t maxVGAPixelClock {0};
+
+	/**
 	 *  Framebuffer address space start
 	 */
 	uint8_t *framebufferStart {nullptr};

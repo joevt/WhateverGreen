@@ -124,6 +124,7 @@ Read [FAQs](./Manual/) and avoid asking any questions. No support is provided fo
 | `igfxpavp=1` 		  | `igfxpavp` property on IGPU 	| Force enable PAVP output 	|
 | `igfxrpsc=1` 		 	| `rps-control` property on IGPU 	| Enable RPS control patch (improves IGPU performance) 	|
 | `igfxsnb=0` 		  | N/A 	| Disable IntelAccelerator name fix for Sandy Bridge CPUs 	|
+| `igfxvgaclock=PIXELCLOCK` | N/A | To change max pixel clock from 160 MHz for VGA adapters. Set this to 360000000 if you have an adapter that can do 330 MHz or more. |
 
 ##### Backlight
 

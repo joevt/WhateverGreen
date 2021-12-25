@@ -426,6 +426,22 @@ bool IGFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t a
 				};
 				patcher.routeMultiple(index, requests, address, size);
 			}
+
+			maxVGAPixelClock = 0;
+			PE_parse_boot_argn("igfxvgaclock", &maxVGAPixelClock, sizeof(maxVGAPixelClock));
+			if (maxVGAPixelClock > 0) {
+				uint8_t *maxVGAPixelClockPtr = (uint8_t*)&maxVGAPixelClockPtr;
+				uint32_t orgVGAPixelClock = 160000000;
+				uint8_t *orgVGAPixelClockPtr = (uint8_t*)&orgVGAPixelClock;
+
+				const uint8_t findVGAPixelClock[]    = { 0x48, 0xC7, 0x85, 0x00, 0x00, 0xFF, 0xFF, orgVGAPixelClockPtr[0], orgVGAPixelClockPtr[1], orgVGAPixelClockPtr[2], orgVGAPixelClockPtr[3] };
+				const uint8_t replaceVGAPixelClock[] = { 0x48, 0xC7, 0x85, 0x00, 0x00, 0xFF, 0xFF, maxVGAPixelClockPtr[0], maxVGAPixelClockPtr[1], maxVGAPixelClockPtr[2], maxVGAPixelClockPtr[3] };
+				const uint8_t maskVGAPixelClock[]    = { 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
+
+				KernelPatcher::LookupPatch VGAPixelClockPatch { currentFramebuffer, findVGAPixelClock, replaceVGAPixelClock, sizeof(findVGAPixelClock), 1, maskVGAPixelClock, maskVGAPixelClock };
+				patcher.applyLookupPatch(&VGAPixelClockPatch);
+				DBGLOG("igfx", "applyVGAPixelClockPatch applied VGA pixel clock patch");
+			}
 		}
 		DBGLOG("igfx", "] IGFX::processKext true");
 		return true;
@@ -1688,38 +1704,36 @@ void IGFX::writePlatformListData(const char *subKeyName) {
 #endif
 
 bool IGFX::applyPatch(const KernelPatcher::LookupPatch &patch, uint8_t *startingAddress, size_t maxSize) {
-	bool r = false;
-	size_t i = 0, patchCount = 0;
-	uint8_t *startAddress = startingAddress;
-	uint8_t *endAddress = startingAddress + maxSize - patch.size;
+	size_t i = 0, changes = 0;
+	uint8_t *currentAddress = startingAddress;
+	uint8_t *endingAddress = startingAddress + maxSize - patch.size;
 
-	if (startAddress < framebufferStart)
-		startAddress = framebufferStart;
-	if (endAddress > framebufferStart + framebufferSize)
-		endAddress = framebufferStart + framebufferSize;
+	if (currentAddress < framebufferStart)
+		currentAddress = framebufferStart;
+	if (endingAddress > framebufferStart + framebufferSize)
+		endingAddress = framebufferStart + framebufferSize;
 
-	while (startAddress < endAddress) {
+	while (currentAddress < endingAddress) {
 		for (i = 0; i < patch.size; i++) {
-			if (startAddress[i] != patch.find[i])
+			uint8_t mask = patch.maskFind ? patch.maskFind[i] : 0xFF;
+			if ((currentAddress[i] & mask) != (patch.find[i] & mask))
 				break;
 		}
 		if (i == patch.size) {
-			for (i = 0; i < patch.size; i++)
-				startAddress[i] = patch.replace[i];
-
-			r = true;
-
-			if (++patchCount >= patch.count)
+			for (i = 0; i < patch.size; i++) {
+				uint8_t mask = patch.maskReplace ? patch.maskReplace[i] : 0xFF;
+				currentAddress[i] = (currentAddress[i] & ~mask) | (patch.replace[i] & mask);
+			}
+			changes++;
+			if (patch.count && changes >= patch.count)
 				break;
-
-			startAddress += patch.size;
-			continue;
+			currentAddress += patch.size;
 		}
-
-		startAddress++;
+		else
+			currentAddress++;
 	}
 
-	return r;
+	return changes > 0;
 }
 
 bool IGFX::setDictUInt32(OSDictionary *dict, const char *key, UInt32 value) {
@@ -1999,6 +2013,8 @@ void IGFX::applyFramebufferPatches() {
 			patch.replace = static_cast<const uint8_t *>(framebufferPatches[i].replace->getBytesNoCopy());
 			patch.size = framebufferPatches[i].find->getLength();
 			patch.count = framebufferPatches[i].count;
+			patch.maskFind = nullptr;
+			patch.maskReplace = nullptr;
 
 			if (applyPatch(patch, platformInformationAddress, PAGE_SIZE))
 				DBGLOG("igfx", "patch %lu framebufferId 0x%08X successful", i, framebufferId);
