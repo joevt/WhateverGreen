@@ -18,6 +18,7 @@
 #include <Headers/kern_disasm.hpp>
 #include <IOKit/IOService.h>
 #include <IOKit/IOLocks.h>
+#include <IOKit/graphics/IOGraphicsTypes.h>
 
 class IGFX {
 public:
@@ -2445,6 +2446,11 @@ private:
 	bool workWithAlreadyLoadedKexts {false};
 
 	/**
+	 *  Override max timing width
+	 */
+	uint32_t maxTimingWidth {0};
+
+	/**
 	 *  Framebuffer address space start
 	 */
 	uint8_t *framebufferStart {nullptr};
@@ -2528,6 +2534,17 @@ private:
 	 */
 	static bool wrapAcceleratorStart(IOService *that, IOService *provider);
 
+	static uint32_t wrapGetMaxTiming(uint64_t* block, uint32_t* maxWidth, uint32_t* maxHeight);
+	mach_vm_address_t orgGetMaxTiming {};
+	static int wrapValidateSourceSize(void *thisAppleIntelFrameBuffer, IODetailedTimingInformationV2* detailedTiming);
+	mach_vm_address_t orgValidateSourceSize {};
+	static int wrapComputeTransformAndSetDimensions_Internal(void *thisAppleIntelFrameBuffer,
+		IODetailedTimingInformationV2 const* detailedTiming,
+		unsigned int& x1, unsigned int& x2, unsigned int& x3,
+		unsigned int& x4, unsigned int& x5, unsigned int& x6,
+		unsigned int& x7, unsigned int& x8
+	);
+	mach_vm_address_t orgComputeTransformAndSetDimensions_Internal {};
 	static void doFrameBufferStuff();
 
 	/**

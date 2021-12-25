@@ -117,6 +117,7 @@ Read [FAQs](./Manual/) and avoid asking any questions. No support is provided fo
 | `igfxframe=frame` | `AAPL,ig-platform-id` or `AAPL,snb-platform-id` property on IGPU 	| Inject a dedicated framebuffer identifier into IGPU (only for TESTING purposes) 	|
 | `igfxfw=2` 		    | `igfxfw` property on IGPU 	| Force loading of Apple GuC firmware 	|
 | `igfxgl=1` 		    | `disable-metal` 	| Disable Metal support on Intel 	|
+| `igfxmaxwidth=WIDTH` | N/A | Boot argument for Kaby Lake and Coffee Lake in Big Sur. Set this to 4097 or greater to enable custom display timings with width > 4096 for displays that are ≤ 4096 wide. `-Disable5KSST` will disable this. |
 | `igfxmetal=1` 	  | `enable-metal` 	| Force enable Metal support on Intel for offline rendering 	|
 | `igfxonln=1` 		  | `force-online` property on IGPU 	| Force online status on all displays 	|
 | `igfxonlnfbs=MASK`| `force-online-framebuffers` property on IGPU 	| Specify indices of connectors for which online status is enforced. Format is similar to `igfxfcmsfbs` 	|

@@ -415,6 +415,17 @@ bool IGFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t a
 				
 				applyWestmerePatches(patcher);
 			}
+
+			maxTimingWidth = 0;
+			PE_parse_boot_argn("igfxmaxwidth", &maxTimingWidth, sizeof(maxTimingWidth));
+			if (maxTimingWidth > 0) {
+				KernelPatcher::RouteRequest requests[] {
+					{"__ZN31AppleIntelFramebufferController12getMaxTimingEPhPjS1_", wrapGetMaxTiming, orgGetMaxTiming},
+					{"__ZN21AppleIntelFramebuffer18ValidateSourceSizeEP29IODetailedTimingInformationV2", wrapValidateSourceSize, orgValidateSourceSize},
+					{"__ZN21AppleIntelFramebuffer41ComputeTransformAndSetDimensions_InternalERK29IODetailedTimingInformationV2RjS3_S3_S3_S3_S3_S3_S3_", wrapComputeTransformAndSetDimensions_Internal, orgComputeTransformAndSetDimensions_Internal},
+				};
+				patcher.routeMultiple(index, requests, address, size);
+			}
 		}
 		DBGLOG("igfx", "] IGFX::processKext true");
 		return true;
@@ -2221,4 +2232,88 @@ void IGFX::applyWestmereFeaturePatches(IOService *framebuffer) {
 		DBGLOG("igfx", "applyWestmereFeaturePatches successful %X", callbackIGFX->framebufferPatchFlags.value);
 	else
 		DBGLOG("igfx", "applyWestmereFeaturePatches failed %X", callbackIGFX->framebufferPatchFlags.value);
+}
+
+
+uint32_t IGFX::wrapGetMaxTiming(uint64_t* block, uint32_t* maxWidth, uint32_t* maxHeight) {
+	int32_t r = FunctionCast(wrapGetMaxTiming, callbackIGFX->orgGetMaxTiming)(block, maxWidth, maxHeight);
+	/*
+	 DBGLOG("igfx", "wrapGetMaxTiming: block:%016llx%016llx%016llx%016llx%016llx%016llx%016llx%016llx%016llx%016llx%016llx%016llx%016llx%016llx%016llx%016llx",
+		   block[0], block[1], block[2], block[3], block[4], block[5], block[6], block[7],
+		   block[8], block[9], block[10], block[11], block[12], block[13], block[14], block[15]);
+	 */
+	DBGLOG("igfx", "wrapGetMaxTiming: x:%d y:%d r:%d", *maxWidth, *maxHeight, r);
+	*maxWidth = callbackIGFX->maxTimingWidth;
+	return r;
+}
+
+
+static void dumpDetailedTiming(IODetailedTimingInformationV2 const* detailedTiming){
+	DBGLOG("igfx", "detailedTiming: scaledInset:%d,%d scalerFlags:0x%x scaled:%d,%d signalConfig:0x%x signalLevels:%d, pixelClock:%ld;%ld,%ld active:%d,%d hblank:%d,%d,%d;%d,%d vblank:%d,%d,%d;%d,%d,%d border:%d,%d;%d,%d links:%d pixelEncoding:%hd bpc:%hd colorimetry:%hd dynamicRange:%hd dsc_bpp:%hd dsc_slice:%hd,%hd",
+		detailedTiming->horizontalScaledInset,
+		detailedTiming->verticalScaledInset,
+		detailedTiming->scalerFlags,
+		detailedTiming->horizontalScaled,
+		detailedTiming->verticalScaled,
+		detailedTiming->signalConfig,
+		detailedTiming->signalLevels,
+		detailedTiming->pixelClock,
+		detailedTiming->minPixelClock,
+		detailedTiming->maxPixelClock,
+		detailedTiming->horizontalActive,
+		detailedTiming->verticalActive,
+		detailedTiming->horizontalBlanking,
+		detailedTiming->horizontalSyncOffset,
+		detailedTiming->horizontalSyncPulseWidth,
+		detailedTiming->horizontalSyncConfig,
+		detailedTiming->horizontalSyncLevel,
+		detailedTiming->verticalBlanking,
+		detailedTiming->verticalSyncOffset,
+		detailedTiming->verticalSyncPulseWidth,
+		detailedTiming->verticalSyncConfig,
+		detailedTiming->verticalSyncLevel,
+		detailedTiming->verticalBlankingExtension,
+		detailedTiming->horizontalBorderLeft,
+		detailedTiming->verticalBorderTop,
+		detailedTiming->horizontalBorderRight,
+		detailedTiming->verticalBorderBottom,
+		detailedTiming->numLinks,
+		detailedTiming->pixelEncoding,
+		detailedTiming->bitsPerColorComponent,
+		detailedTiming->colorimetry,
+		detailedTiming->dynamicRange,
+		detailedTiming->dscCompressedBitsPerPixel,
+		detailedTiming->dscSliceWidth,
+		detailedTiming->dscSliceHeight
+	);
+}
+
+int IGFX::wrapValidateSourceSize(void *thisAppleIntelFrameBuffer, IODetailedTimingInformationV2* detailedTiming) {
+	IODetailedTimingInformationV2 org = *detailedTiming;
+	DBGLOG("igfx", "[ IGFX::wrapValidateSourceSize");
+	int r = FunctionCast(wrapValidateSourceSize, callbackIGFX->orgValidateSourceSize)(thisAppleIntelFrameBuffer, detailedTiming);
+	if (memcmp(&org, detailedTiming, sizeof(org))) {
+		dumpDetailedTiming(detailedTiming);
+	}
+	DBGLOG("igfx", "] IGFX::wrapValidateSourceSize r:%d", r);
+	return r;
+}
+
+int IGFX::wrapComputeTransformAndSetDimensions_Internal(void *thisAppleIntelFrameBuffer,
+	IODetailedTimingInformationV2 const* detailedTiming,
+	unsigned int& x1, unsigned int& x2, unsigned int& x3,
+	unsigned int& x4, unsigned int& x5, unsigned int& x6,
+	unsigned int& x7, unsigned int& x8
+) {
+	IODetailedTimingInformationV2 org = *detailedTiming;
+	DBGLOG("igfx", "[ IGFX::wrapComputeTransformAndSetDimensions_Internal");
+	dumpDetailedTiming(detailedTiming);
+	int r = FunctionCast(wrapComputeTransformAndSetDimensions_Internal, callbackIGFX->orgComputeTransformAndSetDimensions_Internal)(
+		thisAppleIntelFrameBuffer, detailedTiming, x1, x2, x3, x4, x5, x6, x7, x8
+	);
+	if (memcmp(&org, detailedTiming, sizeof(org))) {
+		dumpDetailedTiming(detailedTiming);
+	}
+	DBGLOG("igfx", "] IGFX::wrapComputeTransformAndSetDimensions_Internal %d,%d,%d,%d,%d,%d,%d,%d r:%d", x1, x2, x3, x4, x5, x6, x7, x8, r);
+	return r;
 }
