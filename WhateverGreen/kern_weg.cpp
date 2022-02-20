@@ -93,6 +93,7 @@ WEG::ApplePanelData WEG::appleBacklightData[] {
 WEG *WEG::callbackWEG;
 
 void WEG::init() {
+	DBGLOG("weg", "[ WEG::init");
 	callbackWEG = this;
 
 	// Background init fix is only necessary on 10.10 and newer.
@@ -150,6 +151,7 @@ void WEG::init() {
 		shiki.init();
 		cdf.init();
 	}
+	DBGLOG("weg", "] WEG::init");
 }
 
 void WEG::deinit() {

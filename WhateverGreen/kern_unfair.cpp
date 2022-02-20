@@ -21,17 +21,22 @@
 UNFAIR *UNFAIR::callbackUNFAIR;
 
 void UNFAIR::init() {
+	DBGLOG("unfair", "[ UNFAIR::init");
 	callbackUNFAIR = this;
 
 	disableUnfair = !(lilu.getRunMode() & LiluAPI::RunningNormal);
 	disableUnfair |= checkKernelArgument("-unfairoff");
 
-	if (disableUnfair)
+	if (disableUnfair) {
+		DBGLOG("unfair", "] UNFAIR::init (disabled)");
 		return;
+	}
+	DBGLOG("unfair", "] UNFAIR::init");
 }
 
 void UNFAIR::deinit() {
-
+	DBGLOG("unfair", "[ UNFAIR::deinit");
+	DBGLOG("unfair", "] UNFAIR::deinit");
 }
 
 void UNFAIR::csValidatePage(vnode *vp, memory_object_t pager, memory_object_offset_t page_offset, const void *data, int *validated_p, int *tainted_p, int *nx_p) {
@@ -76,13 +81,17 @@ void UNFAIR::csValidatePage(vnode *vp, memory_object_t pager, memory_object_offs
 }
 
 void UNFAIR::processKernel(KernelPatcher &patcher, DeviceInfo *info) {
-	if (disableUnfair)
+	DBGLOG("unfair", "[ UNFAIR::processKernel");
+	if (disableUnfair) {
+		DBGLOG("unfair", "] UNFAIR::processKernel (disabled)");
 		return;
+	}
 
 	WEG::getVideoArgument(info, "unfairgva", &unfairGva, sizeof(unfairGva));
 	if (unfairGva == 0) {
 		DBGLOG("unfair", "disabling unfair gva due to missing boot argument");
 		disableUnfair = true;
+		DBGLOG("unfair", "] UNFAIR::processKernel (disabled)");
 		return;
 	}
 
@@ -104,4 +113,5 @@ void UNFAIR::processKernel(KernelPatcher &patcher, DeviceInfo *info) {
 	if (!patcher.routeMultipleLong(KernelPatcher::KernelID, &csRoute, 1)) {
 		SYSLOG("unfair", "failed to route cs validation pages");
 	}
+	DBGLOG("unfair", "] UNFAIR::processKernel");
 }

@@ -156,6 +156,7 @@ static UserPatcher::ProcInfo procInfoSieHS { procWindowServerNew, procWindowServ
 CDF *CDF::callbackCDF;
 
 void CDF::init() {
+	DBGLOG("cdf", "[ CDF::init");
 	callbackCDF = this;
 	lilu.onKextLoadForce(kextList, arrsize(kextList));
 
@@ -173,6 +174,7 @@ void CDF::init() {
 				   || getKernelVersion() >= KernelVersion::Mojave) {
 			// the patch is indeed for 10.13.4+, 10.14.x,
 			// and assuming identical one for 10.15+.
+			// tested in 12.1
 			currentProcInfo = &procInfoSieHS;
 			currentModInfo = &binaryModHS1034;
 		}
@@ -180,16 +182,19 @@ void CDF::init() {
 
 	if (currentProcInfo && currentModInfo)
 		lilu.onProcLoadForce(currentProcInfo, 1, nullptr, nullptr, currentModInfo, 1);
+	DBGLOG("cdf", "] CDF::init");
 }
 
 void CDF::deinit() {
-
+	DBGLOG("cdf", "[ CDF::deinit");
+	DBGLOG("cdf", "] CDF::deinit");
 }
 
 void CDF::processKernel(KernelPatcher &patcher, DeviceInfo *info) {
 	// -cdfon -> force enable
 	// -cdfoff -> force disable
 	// enable-hdmi20 -> enable nvidia/intel
+	DBGLOG("cdf", "[ CDF::processKernel");
 	disableHDMI20 = checkKernelArgument("-cdfoff");
 
 	bool patchNVIDIA = false;
@@ -220,11 +225,15 @@ void CDF::processKernel(KernelPatcher &patcher, DeviceInfo *info) {
 		for (size_t i = 0; i < currentModInfo->count; i++)
 			currentModInfo->patches[i].section = UserPatcher::ProcInfo::SectionDisabled;
 	}
+	DBGLOG("cdf", "] CDF::processKernel");
 }
 
 bool CDF::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t address, size_t size) {
-	if (disableHDMI20)
+	DBGLOG("cdf", "[ CDF::processKext");
+	if (disableHDMI20) {
 		return false;
+		DBGLOG("cdf", "] CDF::processKext false (disableHDMI20 = true)");
+	}
 
 	if (kextList[KextGK100HalSys].loadIndex == index) {
 		KernelPatcher::LookupPatch patch {&kextList[KextGK100HalSys], gk100Find, gk100Repl, sizeof(gk100Find), 1};
@@ -233,6 +242,7 @@ bool CDF::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t ad
 			SYSLOG("cdf", "failed to apply gk100 patch %d", patcher.getError());
 			patcher.clearError();
 		}
+		DBGLOG("cdf", "] CDF::processKext true (KextGK100HalSys)");
 		return true;
 	}
 
@@ -243,6 +253,7 @@ bool CDF::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t ad
 			SYSLOG("cdf", "failed to apply gk100 web patch %d", patcher.getError());
 			patcher.clearError();
 		}
+		DBGLOG("cdf", "] CDF::processKext true (KextGK100HalWeb)");
 		return true;
 	}
 
@@ -253,6 +264,7 @@ bool CDF::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t ad
 			SYSLOG("cdf", "failed to apply gm100 web patch %d", patcher.getError());
 			patcher.clearError();
 		}
+		DBGLOG("cdf", "] CDF::processKext true (KextGM100HalWeb)");
 		return true;
 	}
 
@@ -263,9 +275,11 @@ bool CDF::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t ad
 			SYSLOG("cdf", "failed to apply gp100 web patch %d", patcher.getError());
 			patcher.clearError();
 		}
+		DBGLOG("cdf", "] CDF::processKext true (KextGP100HalWeb)");
 		return true;
 	}
 
+	DBGLOG("cdf", "] CDF::processKext false");
 	return false;
 }
 

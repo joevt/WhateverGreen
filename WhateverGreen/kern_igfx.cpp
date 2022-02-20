@@ -185,7 +185,7 @@ void IGFX::deinit() {
 }
 
 void IGFX::processKernel(KernelPatcher &patcher, DeviceInfo *info) {
-	DBGLOG("weg", "[ IGFX::processKernel");
+	DBGLOG("igfx", "[ IGFX::processKernel");
 	bool switchOffGraphics = false;
 	bool switchOffFramebuffer = false;
 	framebufferPatch.framebufferId = info->reportedFramebufferId;
@@ -283,7 +283,7 @@ void IGFX::processKernel(KernelPatcher &patcher, DeviceInfo *info) {
 		switchOffFramebuffer = !requiresFramebufferPatches() && !submodulesRequiresFramebufferPatch;
 		switchOffGraphics = !requiresGraphicsPatches() && !submodulesRequiresGraphicsPatch;
 
-		DBGLOG("weg", "switchOffFramebuffer:%d switchOffGraphics:%d", switchOffFramebuffer, switchOffGraphics);
+		DBGLOG("igfx", "switchOffFramebuffer:%d switchOffGraphics:%d", switchOffFramebuffer, switchOffGraphics);
 	} else {
 		switchOffGraphics = switchOffFramebuffer = true;
 	}
@@ -302,7 +302,7 @@ void IGFX::processKernel(KernelPatcher &patcher, DeviceInfo *info) {
 		KernelPatcher::RouteRequest request("__ZN9IOService20copyExistingServicesEP12OSDictionaryjj", wrapCopyExistingServices, orgCopyExistingServices);
 		patcher.routeMultiple(KernelPatcher::KernelID, &request, 1);
 	}
-	DBGLOG("weg", "] IGFX::processKernel");
+	DBGLOG("igfx", "] IGFX::processKernel");
 }
 
 bool IGFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t address, size_t size) {
