@@ -144,12 +144,12 @@ void WEG::init() {
 	igfx.init();
 	ngfx.init();
 	rad.init(appleBacklightPatch == APPLBKL_NAVI10);
+	cdf.init();
 
 	if (getKernelVersion() >= KernelVersion::BigSur) {
 		unfair.init();
 	} else {
 		shiki.init();
-		cdf.init();
 	}
 	DBGLOG("weg", "] WEG::init");
 }
@@ -158,12 +158,12 @@ void WEG::deinit() {
 	igfx.deinit();
 	ngfx.deinit();
 	rad.deinit();
+	cdf.deinit();
 
 	if (getKernelVersion() >= KernelVersion::BigSur) {
 		unfair.deinit();
 	} else {
 		shiki.deinit();
-		cdf.deinit();
 	}
 }
 
@@ -301,12 +301,12 @@ void WEG::processKernel(KernelPatcher &patcher) {
 		igfx.processKernel(patcher, devInfo);
 		ngfx.processKernel(patcher, devInfo);
 		rad.processKernel(patcher, devInfo);
+		cdf.processKernel(patcher, devInfo);
 
 		if (getKernelVersion() >= KernelVersion::BigSur) {
 			unfair.processKernel(patcher, devInfo);
 		} else {
 			shiki.processKernel(patcher, devInfo);
-			cdf.processKernel(patcher, devInfo);
 		}
 
 		DeviceInfo::deleter(devInfo);
@@ -401,7 +401,7 @@ void WEG::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t ad
 		return;
 	}
 
-	if (getKernelVersion() < KernelVersion::BigSur && cdf.processKext(patcher, index, address, size)) {
+	if (cdf.processKext(patcher, index, address, size)) {
 		DBGLOG("weg", "] WEG::processKext cdf");
 		return;
 	}
