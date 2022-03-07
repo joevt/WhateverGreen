@@ -176,7 +176,7 @@ IOReturn IGFX::DPCDMaxLinkRateFix::wrapCFLReadAUX(AppleIntelFramebufferControlle
 	callbackIGFX->modDPCDMaxLinkRateFix.displayPath = displayPath;
 	
 	// Invoke the platform-independent wrapper function
-	DBGLOG("igfx", "MLR: [CFL-] wrapReadAUX() Called with controller at 0x%llx and framebuffer at 0x%llx.", that, framebuffer);
+	DBGLOG("igfx", "MLR: [CFL-] wrapReadAUX() Called with controller at 0x%llx and framebuffer at 0x%llx.", (uint64_t)that, (uint64_t)framebuffer);
 	return callbackIGFX->modDPCDMaxLinkRateFix.wrapReadAUX(address, buffer, length);
 }
 
@@ -185,7 +185,7 @@ IOReturn IGFX::DPCDMaxLinkRateFix::wrapICLReadAUX(AppleIntelPort *that, uint32_t
 	callbackIGFX->modDPCDMaxLinkRateFix.port = that;
 	
 	// Invoke the platform-independent wrapper function
-	DBGLOG("igfx", "MLR: [ICL+] wrapReadAUX() Called with port at 0x%llx.", that);
+	DBGLOG("igfx", "MLR: [ICL+] wrapReadAUX() Called with port at 0x%llx.", (uint64_t)that);
 	return callbackIGFX->modDPCDMaxLinkRateFix.wrapReadAUX(address, buffer, length);
 }
 
@@ -272,7 +272,7 @@ IOReturn IGFX::DPCDMaxLinkRateFix::orgReadAUX(uint32_t address, void *buffer, ui
 
 bool IGFX::DPCDMaxLinkRateFix::getFramebufferIndex(uint32_t &index) {
 	auto fb = port != nullptr ? orgICLGetFBFromPort(callbackIGFX->defaultController(), port) : this->framebuffer;
-	DBGLOG("igfx", "MLR: [COMM] GetFBIndex() Port at 0x%llx; Framebuffer at 0x%llx.", port, fb);
+	DBGLOG("igfx", "MLR: [COMM] GetFBIndex() Port at 0x%llx; Framebuffer at 0x%llx.", (uint64_t)port, (uint64_t)fb);
 	return AppleIntelFramebufferExplorer::getIndex(fb, index);
 }
 
@@ -584,7 +584,7 @@ uint32_t IGFX::CoreDisplayClockFix::wrapProbeCDClockFrequency(AppleIntelFramebuf
 	// - 2020.08
 	//
 	
-	DBGLOG("igfx", "CDC: ProbeCDClockFrequency() DInfo: Called with controller at 0x%llx.", that);
+	DBGLOG("igfx", "CDC: ProbeCDClockFrequency() DInfo: Called with controller at 0x%llx.", (uint64_t)that);
 	
 	// Read the Core Display Clock frequency from the CDCLK_CTL register
 	// Bit 0 - 11 stores the decimal frequency
@@ -602,7 +602,7 @@ uint32_t IGFX::CoreDisplayClockFix::wrapProbeCDClockFrequency(AppleIntelFramebuf
 	// Invoke the original method to ensure everything works as expected
 	DBGLOG("igfx", "CDC: ProbeCDClockFrequency() DInfo: Will invoke the original function.");
 	auto retVal = callbackIGFX->modCoreDisplayClockFix.orgProbeCDClockFrequency(that);
-	DBGLOG("igfx", "CDC: ProbeCDClockFrequency() DInfo: The original function returns 0x%llx.", retVal);
+	DBGLOG("igfx", "CDC: ProbeCDClockFrequency() DInfo: The original function returns 0x%llx.", (uint64_t)retVal);
 	return retVal;
 }
 

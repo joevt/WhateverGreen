@@ -33,7 +33,7 @@ IOReturn LSPCON::probe() {
 	uint8_t buffer[128] {};
 	IOReturn retVal = IGFX::AdvancedI2COverAUXSupport::advReadI2COverAUX(controller, framebuffer, displayPath, DP_DUAL_MODE_ADAPTER_I2C_ADDR, 0x00, 128, buffer, 0);
 	if (retVal != kIOReturnSuccess) {
-		SYSLOG("igfx", "SC: LSPCON::probe() Error: [FB%d] Failed to read the LSPCON adapter info. RV = 0x%llx.", index, retVal);
+		SYSLOG("igfx", "SC: LSPCON::probe() Error: [FB%d] Failed to read the LSPCON adapter info. RV = 0x%x.", index, retVal);
 		return retVal;
 	}
 
@@ -91,7 +91,7 @@ IOReturn LSPCON::setMode(Mode newMode) {
 	uint8_t hwModeValue = newMode.getRawValue();
 	IOReturn retVal = IGFX::AdvancedI2COverAUXSupport::advWriteI2COverAUX(controller, framebuffer, displayPath, DP_DUAL_MODE_ADAPTER_I2C_ADDR, DP_DUAL_MODE_LSPCON_CHANGE_MODE, 1, &hwModeValue, 0);
 	if (retVal != kIOReturnSuccess) {
-		SYSLOG("igfx", "SC: LSPCON::setMode() Error: [FB%d] Failed to set the new adapter mode. RV = 0x%llx.", index, retVal);
+		SYSLOG("igfx", "SC: LSPCON::setMode() Error: [FB%d] Failed to set the new adapter mode. RV = 0x%x.", index, retVal);
 		return retVal;
 	}
 
@@ -102,7 +102,7 @@ IOReturn LSPCON::setMode(Mode newMode) {
 		retVal = getMode(mode);
 		// Guard: Read the current effective mode
 		if (retVal != kIOReturnSuccess) {
-			SYSLOG("igfx", "SC: LSPCON::setMode() Error: [FB%d] Failed to read the new effective mode. RV = 0x%llx.", index, retVal);
+			SYSLOG("igfx", "SC: LSPCON::setMode() Error: [FB%d] Failed to read the new effective mode. RV = 0x%x.", index, retVal);
 			continue;
 		}
 		// Guard: The new mode is effective now
@@ -114,7 +114,7 @@ IOReturn LSPCON::setMode(Mode newMode) {
 		IOSleep(20);
 	}
 
-	SYSLOG("igfx", "SC: LSPCON::setMode() Error: [FB%d] Timed out while waiting for the new mode to be effective. Last RV = 0x%llx.", index, retVal);
+	SYSLOG("igfx", "SC: LSPCON::setMode() Error: [FB%d] Timed out while waiting for the new mode to be effective. Last RV = 0x%x.", index, retVal);
 	return retVal;
 }
 
@@ -131,7 +131,7 @@ IOReturn LSPCON::wakeUpNativeAUX() {
 	uint8_t byte;
 	IOReturn retVal = IGFX::callbackIGFX->modLSPCONDriverSupport.orgReadAUX(controller, framebuffer, 0x00000, 1, &byte, displayPath);
 	if (retVal != kIOReturnSuccess)
-		SYSLOG("igfx", "SC: LSPCON::wakeUpNativeAUX() Error: [FB%d] Failed to wake up the native AUX channel. RV = 0x%llx.", index, retVal);
+		SYSLOG("igfx", "SC: LSPCON::wakeUpNativeAUX() Error: [FB%d] Failed to wake up the native AUX channel. RV = 0x%x.", index, retVal);
 	else
 		DBGLOG("igfx", "SC: LSPCON::wakeUpNativeAUX() DInfo: [FB%d] The native AUX channel is up. DPCD Rev = 0x%02x.", index, byte);
 	return retVal;
@@ -211,7 +211,7 @@ void IGFX::LSPCONDriverSupport::setupLSPCON(void *that, IORegistryEntry *framebu
 		SYSLOG("igfx", "SC: fbSetupLSPCON() Error: Failed to retrieve the framebuffer index.");
 		return;
 	}
-	DBGLOG("igfx", "SC: fbSetupLSPCON() DInfo: [FB%d] called with controller at 0x%llx and framebuffer at 0x%llx.", index, that, framebuffer);
+	DBGLOG("igfx", "SC: fbSetupLSPCON() DInfo: [FB%d] called with controller at 0x%llx and framebuffer at 0x%llx.", index, (uint64_t)that, (uint64_t)framebuffer);
 
 	// Retrieve the user preference
 	LSPCON *lspcon = nullptr;
@@ -232,7 +232,7 @@ void IGFX::LSPCONDriverSupport::setupLSPCON(void *that, IORegistryEntry *framebu
 	if (hasLSPCONInitialized(index)) {
 		// Already initialized
 		lspcon = getLSPCON(index);
-		DBGLOG("igfx", "SC: fbSetupLSPCON() DInfo: [FB%d] LSPCON driver (at 0x%llx) has already been initialized for this framebuffer.", index, lspcon);
+		DBGLOG("igfx", "SC: fbSetupLSPCON() DInfo: [FB%d] LSPCON driver (at 0x%llx) has already been initialized for this framebuffer.", index, (uint64_t)lspcon);
 		// Confirm that the adapter is running in preferred mode
 		if (lspcon->setModeIfNecessary(pmode) != kIOReturnSuccess) {
 			SYSLOG("igfx", "SC: fbSetupLSPCON() Error: [FB%d] The adapter is not running in preferred mode. Failed to update the mode.", index);
@@ -323,6 +323,6 @@ IOReturn IGFX::LSPCONDriverSupport::wrapGetDPCDInfo(void *that, IORegistryEntry 
 	// Call the original method
 	DBGLOG("igfx", "SC: GetDPCDInfo() DInfo: Will call the original method.");
 	IOReturn retVal = callbackIGFX->modLSPCONDriverSupport.orgGetDPCDInfo(that, framebuffer, displayPath);
-	DBGLOG("igfx", "SC: GetDPCDInfo() DInfo: Returns 0x%llx.", retVal);
+	DBGLOG("igfx", "SC: GetDPCDInfo() DInfo: Returns 0x%x.", retVal);
 	return retVal;
 }

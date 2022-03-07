@@ -97,25 +97,25 @@ static IOReturn fbdebugWrapGetAttribute(IOService *framebuffer, IOIndex connectI
 	int idx = (idxnum != nullptr) ? (int) idxnum->unsigned32BitValue() : -1;
 	SYSLOG("igfx", "getAttributeForConnection %d %d %s (%x) start (non-null - %d)", idx, connectIndex, getAttributeName(attribute), attribute, value != nullptr);
 	IOReturn ret = FunctionCast(fbdebugWrapGetAttribute, fbdebugOrgGetAttribute)(framebuffer, connectIndex, attribute, value);
-	SYSLOG("igfx", "getAttributeForConnection %d %d %s (%x) end - %x / %llx", idx, connectIndex, getAttributeName(attribute), attribute, ret, value ? *value : 0);
+	SYSLOG("igfx", "getAttributeForConnection %d %d %s (%x) end - %x / %lx", idx, connectIndex, getAttributeName(attribute), attribute, ret, value ? *value : 0);
 	return ret;
 }
 
 static IOReturn fbdebugWrapSetAttribute(IOService *framebuffer, IOIndex connectIndex, IOSelect attribute, uintptr_t value) {
 	auto idxnum = OSDynamicCast(OSNumber, framebuffer->getProperty("IOFBDependentIndex"));
 	int idx = (idxnum != nullptr) ? (int) idxnum->unsigned32BitValue() : -1;
-	SYSLOG("igfx", "setAttributeForConnection %d %d %s (%x) start -> %llx", idx, connectIndex, getAttributeName(attribute), attribute, value);
+	SYSLOG("igfx", "setAttributeForConnection %d %d %s (%x) start -> %lx", idx, connectIndex, getAttributeName(attribute), attribute, value);
 	IOReturn ret = FunctionCast(fbdebugWrapSetAttribute, fbdebugOrgSetAttribute)(framebuffer, connectIndex, attribute, value);
-	SYSLOG("igfx", "setAttributeForConnection %d %d %s (%x) end -> %llx - %x", idx, connectIndex, getAttributeName(attribute), attribute, value, ret);
+	SYSLOG("igfx", "setAttributeForConnection %d %d %s (%x) end -> %lx - %x", idx, connectIndex, getAttributeName(attribute), attribute, value, ret);
 	return ret;
 }
 
 static IOReturn fbdebugWrapSetDisplayMode(IOService *framebuffer, IODisplayModeID displayMode, IOIndex depth) {
 	auto idxnum = OSDynamicCast(OSNumber, framebuffer->getProperty("IOFBDependentIndex"));
 	int idx = (idxnum != nullptr) ? (int) idxnum->unsigned32BitValue() : -1;
-	SYSLOG("igfx", "setDisplayMode %d %x start", idx, displayMode, depth);
+	SYSLOG("igfx", "setDisplayMode %d %x depth:%d start", idx, displayMode, depth);
 	IOReturn ret = FunctionCast(fbdebugWrapSetDisplayMode, fbdebugOrgSetDisplayMode)(framebuffer, displayMode, depth);
-	SYSLOG("igfx", "setDisplayMode %d %x end - %x", idx, displayMode, depth, ret);
+	SYSLOG("igfx", "setDisplayMode %d %x depth:%d end - %x", idx, displayMode, depth, ret);
 	return ret;
 }
 

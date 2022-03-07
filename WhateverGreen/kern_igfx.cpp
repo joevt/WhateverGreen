@@ -1912,7 +1912,7 @@ bool IGFX::applyDPtoHDMIPatch(uint32_t framebufferId, FramebufferSNB *platformIn
 		if (sandyPlatformId[i] == framebufferId) {
 			for (size_t j = 0; j < arrsize(platformInformationList[i].connectors); j++) {
 				DBGLOG("igfx", "snb connector [%lu] busId: 0x%02X, pipe: %d, type: 0x%08X, flags: 0x%08X", j, platformInformationList[i].connectors[j].busId, platformInformationList[i].connectors[j].pipe,
-					   platformInformationList[i].connectors[j].type, platformInformationList[i].connectors[j].flags);
+					   platformInformationList[i].connectors[j].type, platformInformationList[i].connectors[j].flags.value);
 
 				if (platformInformationList[i].connectors[j].type == ConnectorDP) {
 					platformInformationList[i].connectors[j].type = ConnectorHDMI;
@@ -1935,7 +1935,7 @@ bool IGFX::applyDPtoHDMIPatch(uint32_t framebufferId, T *platformInformationList
 	bool found = false;
 	for (size_t i = 0; i < arrsize(frame->connectors); i++) {
 		DBGLOG("igfx", "connector [%lu] busId: 0x%02X, pipe: %d, type: 0x%08X, flags: 0x%08X", i, platformInformationList[i].connectors[i].busId, platformInformationList[i].connectors[i].pipe,
-			   platformInformationList[i].connectors[i].type, platformInformationList[i].connectors[i].flags);
+			   platformInformationList[i].connectors[i].type, platformInformationList[i].connectors[i].flags.value);
 
 		if (frame->connectors[i].type == ConnectorDP) {
 			frame->connectors[i].type = ConnectorHDMI;
@@ -2265,7 +2265,7 @@ uint32_t IGFX::wrapGetMaxTiming(uint64_t* block, uint32_t* maxWidth, uint32_t* m
 
 
 static void dumpDetailedTiming(IODetailedTimingInformationV2 const* detailedTiming){
-	DBGLOG("igfx", "detailedTiming: scaledInset:%d,%d scalerFlags:0x%x scaled:%d,%d signalConfig:0x%x signalLevels:%d, pixelClock:%ld;%ld,%ld active:%d,%d hblank:%d,%d,%d;%d,%d vblank:%d,%d,%d;%d,%d,%d border:%d,%d;%d,%d links:%d pixelEncoding:%hd bpc:%hd colorimetry:%hd dynamicRange:%hd dsc_bpp:%hd dsc_slice:%hd,%hd",
+	DBGLOG("igfx", "detailedTiming: scaledInset:%d,%d scalerFlags:0x%x scaled:%d,%d signalConfig:0x%x signalLevels:%d, pixelClock:%lld;%lld,%lld active:%d,%d hblank:%d,%d,%d;%d,%d vblank:%d,%d,%d;%d,%d,%d border:%d,%d;%d,%d links:%d pixelEncoding:%hd bpc:%hd colorimetry:%hd dynamicRange:%hd dsc_bpp:%hd dsc_slice:%hd,%hd",
 		detailedTiming->horizontalScaledInset,
 		detailedTiming->verticalScaledInset,
 		detailedTiming->scalerFlags,
