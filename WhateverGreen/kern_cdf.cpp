@@ -47,22 +47,17 @@ enum : size_t {
 	KextGP100HalWeb
 };
 
-// target framework for 10.10.x and 10.11.x
-static const char *binaryIOKitFramework = "/System/Library/Frameworks/IOKit.framework/Versions/A/IOKit";
+// target framework for 10.4.x to 10.11.x
+#define binaryIOKitFramework       "/System/Library/Frameworks/IOKit.framework/Versions/A/IOKit"
 // target framework as of 10.12.x
-static const char *binaryCoreDisplayFramework = "/System/Library/Frameworks/CoreDisplay.framework/Versions/A/CoreDisplay";
-// accompanied process for 10.10.x or 10.11.x
-static const char *procWindowServerOld = "/System/Library/Frameworks/CoreGraphics.framework/Versions/A/Resources/WindowServer";
-static uint32_t procWindowServerOldLen = sizeof("/System/Library/Frameworks/CoreGraphics.framework/Versions/A/Resources/WindowServer") - 1;
-// accompanied process for 10.12.x
-static const char *procWindowServerNew = "/System/Library/PrivateFrameworks/SkyLight.framework/Versions/A/Resources/WindowServer";
-static uint32_t procWindowServerNewLen = sizeof("/System/Library/PrivateFrameworks/SkyLight.framework/Versions/A/Resources/WindowServer") - 1;
+#define binaryCoreDisplayFramework "/System/Library/Frameworks/CoreDisplay.framework/Versions/A/CoreDisplay"
 
-enum : uint32_t {
-	SectionYosEC   = 1,
-	SectionSieHS   = 2,
-	SectionHS1034  = 3
-};
+// accompanied process for 10.4.x to 10.7.x (exists up to 10.11.x)
+#define procWindowServer_ApplicationServices "/System/Library/Frameworks/ApplicationServices.framework/Versions/A/Frameworks/CoreGraphics.framework/Versions/A/Resources/WindowServer"
+// accompanied process for 10.8.x to 10.11.x
+#define procWindowServer_CoreGraphics        "/System/Library/Frameworks/CoreGraphics.framework/Versions/A/Resources/WindowServer"
+// accompanied process for 10.12.x to 11.x
+#define procWindowServer_Skylight            "/System/Library/PrivateFrameworks/SkyLight.framework/Versions/A/Resources/WindowServer"
 
 // Patches
 //
@@ -92,66 +87,130 @@ static const uint8_t gmp100Repl[] = { 0x40, 0x42, 0x0F, 0x00 };
 // Patches int CheckTimingWithRange(IOFBConnectRef, IODisplayTimingRange *, IODetailedTimingInformation *)
 // to always return 0 and thus effectively allow the use of any resolution regardless of connection
 // capability. May cause blackscreen with several configurations.
-static const uint8_t frameworkOldFind[] {
+
+// 10.4.11
+static const uint8_t frameworkFind_10_4[] {
+	0xA8, 0x01,                                     // test al, 0x1
+	0x74, 0x0A,                                     // je +10
+	0xB8, 0x01, 0x00, 0x00, 0x00,                   // mov eax, 0x1
+	0xE9                                            // jmp <somewhere>
+};
+
+static const uint8_t frameworkRepl_10_4[] {
+	0x90, 0x90, 0x90, 0x90,                         // nop (4x)
+	0xB8, 0x00, 0x00, 0x00, 0x00,                   // mov eax, 0x0
+	0xE9                                            // jmp <somewhere>
+};
+
+// 10.5.8
+static const uint8_t frameworkFind_10_5[] {
+	0x89, 0xD0,                                     // mov eax, edx
+	0x83, 0xE0, 0x01,                               // and eax, 0x1
+	0x85, 0xC0,                                     // test eax, eax
+	0x0F, 0x85                                      // jne <somewhere>
+};
+
+static const uint8_t frameworkRepl_10_5[] {
+	0x90, 0x90, 0x90,                               // nop (3x)
+	0xB9, 0x00, 0x00, 0x00, 0x00,                   // mov ecx, 0x0
+	0xE9                                            // jmp <somewhere>
+};
+
+// 10.6.8
+static const uint8_t frameworkFind_10_6[] {
+	0xB9, 0x01, 0x00, 0x00, 0x00,                   // mov ecx, 0x1
+	0xA8, 0x01,                                     // test al, 0x1
+	0x0F, 0x85                                      // jne <somewhere>
+};
+
+static const uint8_t frameworkRepl_10_6[] {
+	0x90, 0x90, 0x90,                               // nop (3x)
+	0xB9, 0x00, 0x00, 0x00, 0x00,                   // mov ecx, 0x0
+	0xE9                                            // jmp <somewhere>
+};
+
+// 10.7.5
+static const uint8_t frameworkFind_10_7[] {
+	0xF6, 0xC1, 0x01,                               // test cl, 0x1
+	0x74, 0x0A,                                     // je +10
+	0xB8, 0x01, 0x00, 0x00, 0x00,                   // mov eax, 0x1
+	0xE9                                            // jmp <somewhere>
+};
+
+static const uint8_t frameworkRepl_10_7[] {
+	0x90, 0x90, 0x90, 0x90, 0x90,                   // nop (5x)
+	0xB8, 0x00, 0x00, 0x00, 0x00,                   // mov eax, 0x0
+	0xE9                                            // jmp <somewhere>
+};
+
+// 10.8.5
+static const uint8_t frameworkFind_10_8[] {
+	0xBF, 0x01, 0x00, 0x00, 0x00,                   // mov edi, 0x1
+	0xA8, 0x01,                                     // test al, 0x1
+	0x0F, 0x85                                      // jne <somewhere>
+};
+
+static const uint8_t frameworkRepl_10_8[] {
+	0x90, 0x90, 0x90,                               // nop (3x)
+	0xBF, 0x00, 0x00, 0x00, 0x00,                   // mov edi, 0x0
+	0xE9                                            // jmp <somewhere>
+};
+
+// 10.9.5, 10.10.5, 10.11.6, 10.12.6, 10.13.3
+static const uint8_t frameworkFind_10_9[] {
 	0xB8, 0x01, 0x00, 0x00, 0x00,                   // mov  eax, 0x1
 	0xF6, 0xC1, 0x01,                               // test cl, 0x1
-	0x0F, 0x85                                      // jne  "somewhere"  ; Don't care for the exact offset!
+	0x0F, 0x85                                      // jne  <somewhere>
 };
 
-static const uint8_t frameworkOldRepl[] {
-	0x33, 0xC0,                                     // xor eax, eax      ; 0
-	0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90,       // nop (7x)          ; placeholders
-	0xE9                                            // jmp "somewhere"   ; Don't care for the exact offset!
+static const uint8_t frameworkRepl_10_9[] {
+	0x90, 0x90, 0x90, 0x90,                         // nop (4x)
+	0xB8, 0x00, 0x00, 0x00, 0x00,                   // mov  eax, 0x0
+	0xE9                                            // jmp <somewhere>
 };
 
-// 10.13.4+
-static const uint8_t frameworkNewFind[] {
+// 10.13.4, 10.13.6 // use more specific match below for 10.14.6, 10.15.7
+static const uint8_t frameworkFind_10_13_4[] {
 	0xBB, 0x01, 0x00, 0x00, 0x00,                   // mov ebx, 0x1
 	0xA8, 0x01,                                     // test al, 0x1
 	0x0F, 0x85                                      // jne <somewhere>
 };
 
-static const uint8_t frameworkNewRepl[] {
-	0x31, 0xDB,                                     // xor ebx, ebx
-	0x90, 0x90, 0x90, 0x90, 0x90, 0x90,             // nop (6x)
+static const uint8_t frameworkRepl_10_13_4[] {
+	0x90, 0x90, 0x90,                               // nop (3x)
+	0xBB, 0x00, 0x00, 0x00, 0x00,                   // mov ebx, 0x0
 	0xE9                                            // jmp <somewhere>
 };
 
-static UserPatcher::BinaryModPatch frameworkPatchOld {
-	CPU_TYPE_X86_64,
-	0,
-	frameworkOldFind,
-	frameworkOldRepl,
-	arrsize(frameworkOldFind),
-	0,            // skip  = 0 -> replace all occurrences
-	1,            // count = 1 -> 1 set of hex inside the target binaries
-	UserPatcher::FileSegment::SegmentTextText,
-	SectionHS1034 // 10.10.x till 10.13.3 (all universal)
+// 10.14.6, 10.15.7, 11.6.4, 12.2.1
+// Make sure there's only one match in each dyld shared cache (especially if we don't have the code to limit the patch to the CoreDisplay part of the cache)
+// LANG=C grep -obUa "\x8B\x42\x20\xBB\x01\x00\x00\x00\xA8\x01\x0F\x85" /Volumes/*/S*/L*/dyld/dyld_shared_cache_x86_64* /Volumes/*/S*/L*/F*/CoreDisplay.framework/Versions/A/CoreDisplay
+// Don't run this test on a Mac that has dyld patches enabled - the file may appear to have patches applied to it but that's only in RAM.
+static const uint8_t frameworkFind_10_14[] {
+	0x8B, 0x42, 0x20,                               // mov eax, dword [rdx+0x20]
+	0xBB, 0x01, 0x00, 0x00, 0x00,                   // mov ebx, 0x1
+	0xA8, 0x01,                                     // test al, 0x1
+	0x0F, 0x85                                      // jne <somewhere>
 };
 
-static UserPatcher::BinaryModPatch frameworkPatchNew {
-	CPU_TYPE_X86_64,
-	0,
-	frameworkNewFind,
-	frameworkNewRepl,
-	arrsize(frameworkNewFind),
-	0,            // skip  = 0 -> replace all occurrences
-	1,            // count = 1 -> 1 set of hex inside the target binaries
-	UserPatcher::FileSegment::SegmentTextText,
-	SectionHS1034 // 10.13.4+
+static const uint8_t frameworkRepl_10_14[] {
+	0x90, 0x90, 0x90, 0x90, 0x90, 0x90,             // nop (6x)
+	0xBB, 0x00, 0x00, 0x00, 0x00,                   // mov ebx, 0x0
+	0xE9                                            // jmp <somewhere>
 };
 
-// 10.10.x and 10.11.x
-static UserPatcher::BinaryModInfo binaryModYosEC { binaryIOKitFramework, &frameworkPatchOld, 1 };
-// 10.12.x and 10.13.0-10.13.3
-static UserPatcher::BinaryModInfo binaryModSieHS { binaryCoreDisplayFramework, &frameworkPatchOld, 1 };
-// 10.13.4+
-static UserPatcher::BinaryModInfo binaryModHS1034 { binaryCoreDisplayFramework, &frameworkPatchNew, 1 };
+static UserPatcher::BinaryModPatch frameworkPatch {
+	CPU_TYPE_X86_64, 0, // flags
+	NULL, NULL, 0, // find, replace, size
+	0, // skip  = 0 -> replace all occurrences
+	1, // count = 1 -> 1 set of hex inside the target binaries
+	UserPatcher::FileSegment::SegmentTextText,
+	1 // enabled
+};
 
-// 10.10.x and 10.11.x
-static UserPatcher::ProcInfo procInfoYosEC { procWindowServerOld, procWindowServerOldLen, SectionYosEC };
-// 10.12.x and 10.13.x
-static UserPatcher::ProcInfo procInfoSieHS { procWindowServerNew, procWindowServerNewLen, SectionSieHS };
+static UserPatcher::BinaryModInfo binaryMod { NULL, &frameworkPatch, 1 };
+
+static UserPatcher::ProcInfo procInfo { NULL, 0, 1 };
 
 CDF *CDF::callbackCDF;
 
@@ -162,26 +221,32 @@ void CDF::init() {
 
 	// nothing should be applied when -cdfoff is passed
 	if (!checkKernelArgument("-cdfoff")) {
-		if (getKernelVersion() == KernelVersion::Yosemite || getKernelVersion() == KernelVersion::ElCapitan) {
-			// 10.10, 10.11
-			currentProcInfo = &procInfoYosEC;
-			currentModInfo = &binaryModYosEC;
-		} else if (getKernelVersion() == KernelVersion::Sierra || (getKernelVersion() == KernelVersion::HighSierra && getKernelMinorVersion() < 5)) {
-			// 10.12, 10.13.0-10.13.3
-			currentProcInfo = &procInfoSieHS;
-			currentModInfo = &binaryModSieHS;
-		} else if ((getKernelVersion() == KernelVersion::HighSierra && getKernelMinorVersion() >= 5)
-				   || getKernelVersion() >= KernelVersion::Mojave) {
-			// the patch is indeed for 10.13.4+, 10.14.x,
-			// and assuming identical one for 10.15+.
-			// tested in 12.1
-			currentProcInfo = &procInfoSieHS;
-			currentModInfo = &binaryModHS1034;
+		#define onepatch(_proc, _bin, _patch, _ver) \
+		if (_ver) { \
+			procInfo.path = procWindowServer_ ## _proc; \
+			procInfo.len = sizeof(procWindowServer_ ## _proc) - 1; \
+			binaryMod.path = binary ## _bin ## Framework; \
+			frameworkPatch.find = frameworkFind_ ## _patch; \
+			frameworkPatch.replace = frameworkRepl_ ## _patch; \
+			frameworkPatch.size = arrsize(frameworkFind_ ## _patch); \
 		}
+		if (0) {}
+		else onepatch(ApplicationServices, IOKit      , 10_4   ,  getKernelVersion() == KernelVersion::Tiger)
+		else onepatch(ApplicationServices, IOKit      , 10_5   ,  getKernelVersion() == KernelVersion::Leopard)
+		else onepatch(ApplicationServices, IOKit      , 10_6   ,  getKernelVersion() == KernelVersion::SnowLeopard)
+		else onepatch(ApplicationServices, IOKit      , 10_7   ,  getKernelVersion() == KernelVersion::Lion)
+		else onepatch(CoreGraphics       , IOKit      , 10_8   ,  getKernelVersion() == KernelVersion::MountainLion)
+		else onepatch(CoreGraphics       , IOKit      , 10_9   ,  getKernelVersion() >= KernelVersion::Mavericks  && getKernelVersion() <= KernelVersion::ElCapitan)
+		else onepatch(Skylight           , CoreDisplay, 10_9   , (getKernelVersion() == KernelVersion::HighSierra && getKernelMinorVersion() <  5) || getKernelVersion() == KernelVersion::Sierra)
+		else onepatch(Skylight           , CoreDisplay, 10_13_4,  getKernelVersion() == KernelVersion::HighSierra && getKernelMinorVersion() >= 5)
+		else onepatch(Skylight           , CoreDisplay, 10_14  ,  getKernelVersion() >= KernelVersion::Mojave)
 	}
-
-	if (currentProcInfo && currentModInfo)
+	
+	if (procInfo.path) {
+		currentProcInfo = &procInfo;
+		currentModInfo = &binaryMod;
 		lilu.onProcLoadForce(currentProcInfo, 1, nullptr, nullptr, currentModInfo, 1);
+	}
 	DBGLOG("cdf", "] CDF::init");
 }
 
@@ -282,4 +347,3 @@ bool CDF::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t ad
 	DBGLOG("cdf", "] CDF::processKext false");
 	return false;
 }
-
