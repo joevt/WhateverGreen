@@ -14,3 +14,7 @@ Tools/WhateverName/WhateverName.app/Contents/MacOS/libWhateverName.dylib
 .svace-dir
 cov-int
 /MacKernelSDK
+*.ii
+*.i
+*.s
+*.bc
