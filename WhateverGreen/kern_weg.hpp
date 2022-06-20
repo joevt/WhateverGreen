@@ -17,6 +17,7 @@
 #include "kern_rad.hpp"
 #include "kern_shiki.hpp"
 #include "kern_unfair.hpp"
+#include "kern_iofbdebug.hpp"
 
 class IOFramebuffer;
 class IODisplay;
@@ -41,6 +42,12 @@ private:
 	 *  High resolution unlocker instances
 	 */
 	CDF cdf;
+
+
+	/**
+	 *  IOFramebuffer debugging instances
+	 */
+	IOFB iofb;
 
 	/**
 	 *  Intel GPU fixes instances

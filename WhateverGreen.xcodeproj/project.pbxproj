@@ -11,6 +11,8 @@
 		1C9CB7B01C789FF500231E41 /* kern_rad.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1C9CB7AE1C789FF500231E41 /* kern_rad.cpp */; };
 		1C9CB7B11C789FF500231E41 /* kern_rad.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 1C9CB7AF1C789FF500231E41 /* kern_rad.hpp */; };
 		2F30012424A00F2800C590C3 /* kern_igfx_pm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2F30012324A00F2800C590C3 /* kern_igfx_pm.cpp */; };
+		6317985C2814D23B0001CBE1 /* kern_iofbdebug.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6317985A2814D23B0001CBE1 /* kern_iofbdebug.cpp */; };
+		6317985D2814D23B0001CBE1 /* kern_iofbdebug.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 6317985B2814D23B0001CBE1 /* kern_iofbdebug.hpp */; };
 		CE1970FF21C380DF00B02AB4 /* kern_nvhda.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CE1970FD21C380DF00B02AB4 /* kern_nvhda.cpp */; };
 		CE19710021C380DF00B02AB4 /* kern_nvhda.hpp in Headers */ = {isa = PBXBuildFile; fileRef = CE1970FE21C380DF00B02AB4 /* kern_nvhda.hpp */; };
 		CE1F61B92432DEE800201DF4 /* kern_igfx_debug.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CE1F61B82432DEE800201DF4 /* kern_igfx_debug.cpp */; };
@@ -93,6 +95,9 @@
 		5B9131F2258A8EFB0008530D /* FAQ.IntelHD.en.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = FAQ.IntelHD.en.md; sourceTree = "<group>"; };
 		5B9131F3258A8F090008530D /* FAQ.IntelHD.cn.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = FAQ.IntelHD.cn.md; sourceTree = "<group>"; };
 		5B9131F4258A8F1C0008530D /* FAQ.OldPlugins.en.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = FAQ.OldPlugins.en.md; sourceTree = "<group>"; };
+		6317985A2814D23B0001CBE1 /* kern_iofbdebug.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = kern_iofbdebug.cpp; sourceTree = "<group>"; };
+		6317985B2814D23B0001CBE1 /* kern_iofbdebug.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = kern_iofbdebug.hpp; sourceTree = "<group>"; };
+		6317985E28153C410001CBE1 /* IOFramebuffer_vtable.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = IOFramebuffer_vtable.hpp; sourceTree = "<group>"; };
 		CE1970FD21C380DF00B02AB4 /* kern_nvhda.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = kern_nvhda.cpp; sourceTree = "<group>"; };
 		CE1970FE21C380DF00B02AB4 /* kern_nvhda.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = kern_nvhda.hpp; sourceTree = "<group>"; };
 		CE1F61B82432DEE800201DF4 /* kern_igfx_debug.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = kern_igfx_debug.cpp; sourceTree = "<group>"; };
@@ -241,6 +246,9 @@
 				CE7FC0C920F682A200138088 /* kern_resources.cpp */,
 				CE7FC0C820F682A200138088 /* kern_resources.hpp */,
 				1C748C2E1C21952C0024EED2 /* Info.plist */,
+				6317985A2814D23B0001CBE1 /* kern_iofbdebug.cpp */,
+				6317985B2814D23B0001CBE1 /* kern_iofbdebug.hpp */,
+				6317985E28153C410001CBE1 /* IOFramebuffer_vtable.hpp */,
 			);
 			path = WhateverGreen;
 			sourceTree = "<group>";
@@ -356,6 +364,7 @@
 				CE7FC0AF20F5622700138088 /* kern_igfx.hpp in Headers */,
 				CEC0863624331E9B00F5B701 /* kern_agdc.hpp in Headers */,
 				CE7FC0B520F6809600138088 /* kern_shiki.hpp in Headers */,
+				6317985D2814D23B0001CBE1 /* kern_iofbdebug.hpp in Headers */,
 				1C9CB7B11C789FF500231E41 /* kern_rad.hpp in Headers */,
 				CEC8E2F120F765E700D3CA3A /* kern_cdf.hpp in Headers */,
 				D5224F4A2518928300D5CF16 /* kern_igfx_lspcon.hpp in Headers */,
@@ -502,6 +511,7 @@
 				D5224F492518928300D5CF16 /* kern_igfx_lspcon.cpp in Sources */,
 				CE1F61B92432DEE800201DF4 /* kern_igfx_debug.cpp in Sources */,
 				CE7FC0AA20F55E7400138088 /* kern_ngfx.cpp in Sources */,
+				6317985C2814D23B0001CBE1 /* kern_iofbdebug.cpp in Sources */,
 				1C748C2D1C21952C0024EED2 /* kern_start.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

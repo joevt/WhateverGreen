@@ -141,6 +141,7 @@ void WEG::init() {
 		lilu.onKextLoadForce(&kextMCCSControl);
 	}
 
+	iofb.init();
 	igfx.init();
 	ngfx.init();
 	rad.init(appleBacklightPatch == APPLBKL_NAVI10);
@@ -155,6 +156,7 @@ void WEG::init() {
 }
 
 void WEG::deinit() {
+	iofb.deinit();
 	igfx.deinit();
 	ngfx.deinit();
 	rad.deinit();
@@ -298,6 +300,7 @@ void WEG::processKernel(KernelPatcher &patcher) {
 				processManagementEngineProperties(devInfo->managementEngine);
 		}
 
+		iofb.processKernel(patcher, devInfo);
 		igfx.processKernel(patcher, devInfo);
 		ngfx.processKernel(patcher, devInfo);
 		rad.processKernel(patcher, devInfo);
@@ -384,6 +387,11 @@ void WEG::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t ad
 			DBGLOG("weg", "applying backlight patch");
 			patcher.applyLookupPatch(&patch);
 		}
+	}
+
+	if (iofb.processKext(patcher, index, address, size)) {
+		DBGLOG("weg", "] WEG::processKext iofb");
+		return;
 	}
 
 	if (igfx.processKext(patcher, index, address, size)) {
