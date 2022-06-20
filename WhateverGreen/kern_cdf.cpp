@@ -17,27 +17,27 @@ static const char *pathGKHal[] = {
 
 // NVDAGK100HalWeb.kext - from web driver, for Kepler
 static const char *pathGKWeb[] = {
-	"/Library/Extensions/NVDAGK100HalWeb.kext/Contents/MacOS/NVDAGK100HalWeb",
+	/**/   "/Library/Extensions/NVDAGK100HalWeb.kext/Contents/MacOS/NVDAGK100HalWeb",
 	"/System/Library/Extensions/NVDAGK100HalWeb.kext/Contents/MacOS/NVDAGK100HalWeb"
 };
 
 // NVDAGM100HalWeb.kext - from web driver, for Maxwell
 static const char *pathGMWeb[] = {
-	"/Library/Extensions/NVDAGM100HalWeb.kext/Contents/MacOS/NVDAGM100HalWeb",
+	/**/   "/Library/Extensions/NVDAGM100HalWeb.kext/Contents/MacOS/NVDAGM100HalWeb",
 	"/System/Library/Extensions/NVDAGM100HalWeb.kext/Contents/MacOS/NVDAGM100HalWeb"
 };
 
 // NVDAGP100HalWeb.kext - from web driver, for Pascal
 static const char *pathGPWeb[] = {
-	"/Library/Extensions/NVDAGP100HalWeb.kext/Contents/MacOS/NVDAGP100HalWeb",
+	/**/   "/Library/Extensions/NVDAGP100HalWeb.kext/Contents/MacOS/NVDAGP100HalWeb",
 	"/System/Library/Extensions/NVDAGP100HalWeb.kext/Contents/MacOS/NVDAGP100HalWeb"
 };
 
 static KernelPatcher::KextInfo kextList[] {
 	{ "com.apple.nvidia.driver.NVDAGK100Hal", pathGKHal, arrsize(pathGKHal), {}, {}, KernelPatcher::KextInfo::Unloaded },
-	{ "com.nvidia.web.NVDAGK100HalWeb", pathGKWeb, arrsize(pathGKWeb), {}, {}, KernelPatcher::KextInfo::Unloaded },
-	{ "com.nvidia.web.NVDAGM100HalWeb", pathGMWeb, arrsize(pathGMWeb), {}, {}, KernelPatcher::KextInfo::Unloaded },
-	{ "com.nvidia.web.NVDAGP100HalWeb", pathGPWeb, arrsize(pathGPWeb), {}, {}, KernelPatcher::KextInfo::Unloaded },
+	{ "com.nvidia.web.NVDAGK100HalWeb"      , pathGKWeb, arrsize(pathGKWeb), {}, {}, KernelPatcher::KextInfo::Unloaded },
+	{ "com.nvidia.web.NVDAGM100HalWeb"      , pathGMWeb, arrsize(pathGMWeb), {}, {}, KernelPatcher::KextInfo::Unloaded },
+	{ "com.nvidia.web.NVDAGP100HalWeb"      , pathGPWeb, arrsize(pathGPWeb), {}, {}, KernelPatcher::KextInfo::Unloaded },
 };
 
 enum : size_t {
