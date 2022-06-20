@@ -12,6 +12,7 @@
 #include <Headers/kern_devinfo.hpp>
 
 #include "kern_cdf.hpp"
+#include "kern_dpd.hpp"
 #include "kern_igfx.hpp"
 #include "kern_ngfx.hpp"
 #include "kern_rad.hpp"
@@ -43,6 +44,10 @@ private:
 	 */
 	CDF cdf;
 
+	/**
+	 *  displaypolicyd fixes instances
+	 */
+	DPD dpd;
 
 	/**
 	 *  IOFramebuffer debugging instances
