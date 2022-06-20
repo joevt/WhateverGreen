@@ -1225,7 +1225,7 @@ bool RAD::wrapNotifyLinkChange(void *atiDeviceControl, kAGDCRegisterLinkControlE
 
 	if (event == kAGDCValidateDetailedTiming) {
 		auto cmd = static_cast<AGDCValidateDetailedTiming_t *>(eventData);
-		DBGLOG("rad", "AGDCValidateDetailedTiming %u -> %d (%u)", cmd->framebufferIndex, ret, cmd->modeStatus);
+		// DBGLOG("rad", "AGDCValidateDetailedTiming %u -> %d (%u)", cmd->framebufferIndex, ret, cmd->modeStatus);
 		// While we have this condition below, the only actual value we get is ret = true, cmd->modeStatus = 0.
 		// This is because AGDP is disabled, and starting from 10.15.1b2 AMDFramebuffer no longer accepts 0 in
 		// __ZN14AMDFramebuffer22validateDetailedTimingEPvy
