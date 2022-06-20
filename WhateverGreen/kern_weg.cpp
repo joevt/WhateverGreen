@@ -469,8 +469,8 @@ void WEG::processBuiltinProperties(IORegistryEntry *device, DeviceInfo *info) {
 			}
 			if (fakeDevice != realDevice) {
 				hasIgpuSpoof = true;
-				KernelPatcher::routeVirtual(obj, WIOKit::PCIConfigOffset::ConfigRead16, wrapConfigRead16, &orgConfigRead16);
-				KernelPatcher::routeVirtual(obj, WIOKit::PCIConfigOffset::ConfigRead32, wrapConfigRead32, &orgConfigRead32);
+				KernelPatcher::routeVirtual(obj, WIOKit::IOPCIDevice_vtableIndex::ConfigRead16, wrapConfigRead16, &orgConfigRead16);
+				KernelPatcher::routeVirtual(obj, WIOKit::IOPCIDevice_vtableIndex::ConfigRead32, wrapConfigRead32, &orgConfigRead32);
 				DBGLOG("weg", "hooked configRead read methods!");
 			}
 		}
@@ -555,8 +555,8 @@ void WEG::processExternalProperties(IORegistryEntry *device, DeviceInfo *info, u
 			DBGLOG("weg", "found AMD GPU with device-id 0x%04X actual 0x%04X", acpiDevice, realDevice);
 			if (acpiDevice != realDevice) {
 				hasGfxSpoof = true;
-				KernelPatcher::routeVirtual(device, WIOKit::PCIConfigOffset::ConfigRead16, wrapConfigRead16, &orgConfigRead16);
-				KernelPatcher::routeVirtual(device, WIOKit::PCIConfigOffset::ConfigRead32, wrapConfigRead32, &orgConfigRead32);
+				KernelPatcher::routeVirtual(device, WIOKit::IOPCIDevice_vtableIndex::ConfigRead16, wrapConfigRead16, &orgConfigRead16);
+				KernelPatcher::routeVirtual(device, WIOKit::IOPCIDevice_vtableIndex::ConfigRead32, wrapConfigRead32, &orgConfigRead32);
 			}
 		} else {
 			DBGLOG("weg", "missing AMD GPU device-id");
