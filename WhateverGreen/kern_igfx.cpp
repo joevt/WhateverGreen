@@ -1306,8 +1306,17 @@ bool IGFX::wrapLoadFirmware(IOService *that) {
 	// We have to patch the virtual table, because the original methods are very short.
 	// See __ZN12IGScheduler415systemWillSleepEv and __ZN12IGScheduler413systemDidWakeEv
 	// Note, that other methods are also not really implemented, so we may have to implement them ourselves sooner or later.
-	(*reinterpret_cast<uintptr_t **>(that))[52] = reinterpret_cast<uintptr_t>(wrapSystemWillSleep);
-	(*reinterpret_cast<uintptr_t **>(that))[53] = reinterpret_cast<uintptr_t>(wrapSystemDidWake);
+	// TODO: Verify that the functions we want to patch are actually at the vtable indexes below.
+	if (getKernelVersion() >= KernelVersion::Mojave) {
+		// vtable indexes verified for 10.14.6, 10.15.7, 11.6.4, 12.3 (not sure if these are correct for 10.14 to 10.14.5)
+		(*reinterpret_cast<uintptr_t **>(that))[35] = reinterpret_cast<uintptr_t>(wrapSystemWillSleep);
+		(*reinterpret_cast<uintptr_t **>(that))[36] = reinterpret_cast<uintptr_t>(wrapSystemDidWake);
+	}
+	else {
+		// vtable indexes verified for 10.13.6 (not sure if these are not correct for 10.14 to 10.14.5)
+		(*reinterpret_cast<uintptr_t **>(that))[52] = reinterpret_cast<uintptr_t>(wrapSystemWillSleep);
+		(*reinterpret_cast<uintptr_t **>(that))[53] = reinterpret_cast<uintptr_t>(wrapSystemDidWake);
+	}
 	return FunctionCast(wrapLoadFirmware, callbackIGFX->orgLoadFirmware)(that);
 }
 
@@ -1321,10 +1330,18 @@ void IGFX::wrapSystemDidWake(IOService *that) {
 
 	// This is IGHardwareGuC class instance.
 	auto &GuC = (reinterpret_cast<OSObject **>(that))[76];
-	DBGLOG("igfx", "reloading firmware on wake discovered IGHardwareGuC %d", GuC != nullptr);
 	if (GuC) {
-		GuC->release();
-		GuC = nullptr;
+		if (GuC->metaCast("IGHardwareGuC")) {
+			DBGLOG("igfx", "reloading firmware on wake; discovered IGHardwareGuC - releasing");
+			GuC->release();
+			GuC = nullptr;
+		}
+		else {
+			DBGLOG("igfx", "reloading firmware on wake; GuC is not a IGHardwareGuC!!");
+		}
+	}
+	else {
+		DBGLOG("igfx", "reloading firmware on wake; no IGHardwareGuC");
 	}
 
 	FunctionCast(wrapLoadFirmware, callbackIGFX->orgLoadFirmware)(that);
