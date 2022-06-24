@@ -81,7 +81,7 @@ void DPD::processKernel(KernelPatcher &patcher, DeviceInfo *info) {
 		for (size_t i = 0; i < currentModInfo->count; i++)
 			currentModInfo->patches[i].section = UserPatcher::ProcInfo::SectionDisabled;
 	}
-	DBGLOG("dpd", "] DPD::processKernel");
+	DBGLOG("dpd", "] DPD::processKernel patchCommon:%d disableDPD:%d", patchCommon, disableDPD);
 }
 
 bool DPD::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t address, size_t size) {

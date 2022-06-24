@@ -290,7 +290,7 @@ void CDF::processKernel(KernelPatcher &patcher, DeviceInfo *info) {
 		for (size_t i = 0; i < currentModInfo->count; i++)
 			currentModInfo->patches[i].section = UserPatcher::ProcInfo::SectionDisabled;
 	}
-	DBGLOG("cdf", "] CDF::processKernel");
+	DBGLOG("cdf", "] CDF::processKernel patchNVIDIA:%d patchCommon:%d disableHDMI20:%d", patchNVIDIA, patchCommon, disableHDMI20);
 }
 
 bool CDF::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t address, size_t size) {

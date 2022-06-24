@@ -254,7 +254,7 @@ void IOFB::processKernel(KernelPatcher &patcher, DeviceInfo *info) {
 		disableIOFB = true;
 	}
 
-	DBGLOG("iofb", "] processKernel");
+	DBGLOG("iofb", "] processKernel patchIODB:%d disableIOFB:%d", patchIODB, disableIOFB);
 }
 
 
