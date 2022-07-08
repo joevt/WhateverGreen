@@ -454,7 +454,7 @@ void IOFB::UpdateAttribute( IORegistryEntry *service, bool set, IOIndex connectI
 		if (array) {
 			while ((data = (OSData *)array->getObject(idx))) {
 				Attribute *atr = (Attribute *)data->getBytesNoCopy();
-				if (!atr || (atr->set == newatr.set && atr->connectIndex == newatr.connectIndex && atr->attribute == newatr.attribute)) {
+				if (!atr || (atr->set == newatr.set && atr->connectIndex == newatr.connectIndex && atr->attribute == newatr.attribute && atr->result == newatr.result)) {
 					array->removeObject(idx);
 					continue;
 				}
