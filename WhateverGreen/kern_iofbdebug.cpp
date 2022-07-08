@@ -2270,6 +2270,8 @@ IOReturn IOFB::wrapgetTimingInfoForDisplayMode( IORegistryEntry *service, IODisp
 	return result;
 }
 
+#define kIOFBInvalidModesKey "IOFBInvalidModes"
+
 IOReturn IOFB::wrapvalidateDetailedTiming( IORegistryEntry *service, void * description, IOByteCount descripSize )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
@@ -2278,10 +2280,43 @@ IOReturn IOFB::wrapvalidateDetailedTiming( IORegistryEntry *service, void * desc
 	const char* resultChange = "";
 
 	IOFBDisplayModeDescription* desc = (IOFBDisplayModeDescription*)description;
-	if (iofbVars->iofbValidateAll && result) {
-		if (descripSize == sizeof(IOFBDisplayModeDescription) /* && desc->info.nominalWidth && desc->info.nominalHeight */) {
-			resultChange = " -> success";
-			newresult = kIOReturnSuccess;
+
+	if (result) {
+		if (iofbVars->iofbValidateAll) {
+			if (descripSize == sizeof(IOFBDisplayModeDescription) /* && desc->info.nominalWidth && desc->info.nominalHeight */) {
+				resultChange = " -> success";
+				newresult = kIOReturnSuccess;
+			}
+		}
+
+		OSArray *array = OSDynamicCast(OSArray, service->getProperty(kIOFBInvalidModesKey));
+		OSData *data;
+
+		int idx = 0;
+		if (!array) {
+			array = OSArray::withCapacity(0);
+		}
+		else {
+			array = (OSArray*)array->copyCollection();
+			if (array) {
+				while ((data = (OSData *)array->getObject(idx))) {
+					const void *bytes = data->getBytesNoCopy();
+					unsigned int len = data->getLength();
+					if (!bytes || ( (*(IOReturn*)bytes == result) && (len == sizeof(IOReturn) + descripSize) && (!memcmp((UInt8*)bytes + sizeof(IOReturn), description, descripSize)) )) {
+						array->removeObject(idx);
+						continue;
+					}
+					idx++;
+				}
+			}
+		}
+		if (array) {
+			OSData *data = OSData::withBytes(&result, sizeof(result));
+			data->appendBytes(description, (unsigned int)descripSize);
+			array->setObject(idx, data);
+			data->release();
+			
+			service->setProperty(kIOFBInvalidModesKey, array);
 		}
 	}
 
@@ -2303,6 +2338,11 @@ IOReturn IOFB::wrapvalidateDetailedTiming( IORegistryEntry *service, void * desc
 			);
 		}
 	}
+/*
+	else {
+		DBGLOG("iofb", "[] validateDetailedTiming fb:0x%llx", (UInt64)service);
+	}
+*/
 
 	return newresult;
 }
