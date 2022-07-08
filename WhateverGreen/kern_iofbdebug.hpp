@@ -65,12 +65,19 @@ private:
 			IOFramebuffer *fb = NULL;
 			bool iofbValidateAll = false;
 			bool iofbSidebandDownRep = false;
-
+#if 0
+			int iofbDumpsetDetailedTimings = 1; // 2
+			int iofbDumpgetPixelInformation = 1; // 0
+			int iofbDumpvalidateDetailedTiming = 1; // 0
+			int iofbDumpdoI2CRequest = 1; // 0
+			int iofbDumpAttributes = 1; // 0
+#else
 			int iofbDumpsetDetailedTimings = 2;
 			int iofbDumpgetPixelInformation = 0;
 			int iofbDumpvalidateDetailedTiming = 0;
-			int iofbDumpdoI2CRequest = 2;
-			int iofbDumpAttributes = 2;
+			int iofbDumpdoI2CRequest = 0;
+			int iofbDumpAttributes = 0;
+#endif
 			// 0 = no
 			// 1 = yes
 			// 2 = only if error
