@@ -66,16 +66,16 @@ enum : size_t {
 // Reference:
 // https://github.com/Floris497/mac-pixel-clock-patch-V2/blob/master/NVIDIA-patcher.command
 //
-static const uint8_t gk100Find[] = { 0x88, 0x84, 0x02, 0x00 };
-static const uint8_t gk100Repl[] = { 0x80, 0x1A, 0x06, 0x00 };
+static const uint8_t gk100Find[] = { 0x88, 0x84, 0x02, 0x00 }; // 165000 kHz
+static const uint8_t gk100Repl[] = { 0x80, 0x1A, 0x06, 0x00 }; // 400000 kHz
 //
 // for NVDAGM100HalWeb and NVDAGP100HalWeb
 //
 // Reference:
 // https://github.com/Floris497/mac-pixel-clock-patch-V2/blob/master/NVIDIA-WEB-MAXWELL-patcher.command
 //
-static const uint8_t gmp100Find[] = { 0x88, 0x84, 0x02, 0x00 };
-static const uint8_t gmp100Repl[] = { 0x40, 0x42, 0x0F, 0x00 };
+static const uint8_t gmp100Find[] = { 0x88, 0x84, 0x02, 0x00 }; // 165000 kHz
+static const uint8_t gmp100Repl[] = { 0x40, 0x42, 0x0F, 0x00 }; // 400000 kHz
 //
 // for frameworks
 //
