@@ -182,7 +182,7 @@ static const uint8_t frameworkRepl_10_13_4[] {
 	0xE9                                            // jmp <somewhere>
 };
 
-// 10.14.6, 10.15.7, 11.6.4, 12.2.1
+// 10.14.6, 10.15.7, 11.6.4, 12.2.1, 13.0.0b3
 // Make sure there's only one match in each dyld shared cache (especially if we don't have the code to limit the patch to the CoreDisplay part of the cache)
 // LANG=C grep -obUa "\x8B\x42\x20\xBB\x01\x00\x00\x00\xA8\x01\x0F\x85" /Volumes/*/S*/L*/dyld/dyld_shared_cache_x86_64* /Volumes/*/S*/L*/F*/CoreDisplay.framework/Versions/A/CoreDisplay
 // Don't run this test on a Mac that has dyld patches enabled - the file may appear to have patches applied to it but that's only in RAM.
