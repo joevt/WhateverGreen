@@ -294,56 +294,60 @@ void CDF::processKernel(KernelPatcher &patcher, DeviceInfo *info) {
 }
 
 bool CDF::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t address, size_t size) {
-	DBGLOG("cdf", "[ CDF::processKext");
+	//DBGLOG("cdf", "[ CDF::processKext");
 	if (disableHDMI20) {
 		return false;
-		DBGLOG("cdf", "] CDF::processKext false (disableHDMI20 = true)");
+		//DBGLOG("cdf", "] CDF::processKext false (disableHDMI20 = true)");
 	}
 
 	if (kextList[KextGK100HalSys].loadIndex == index) {
+		DBGLOG("cdf", "[ CDF::processKext KextGK100HalSys");
 		KernelPatcher::LookupPatch patch {&kextList[KextGK100HalSys], gk100Find, gk100Repl, sizeof(gk100Find), 1};
 		patcher.applyLookupPatch(&patch);
 		if (patcher.getError() != KernelPatcher::Error::NoError) {
 			SYSLOG("cdf", "failed to apply gk100 patch %d", patcher.getError());
 			patcher.clearError();
 		}
-		DBGLOG("cdf", "] CDF::processKext true (KextGK100HalSys)");
+		DBGLOG("cdf", "] CDF::processKext true");
 		return true;
 	}
 
 	if (kextList[KextGK100HalWeb].loadIndex == index) {
+		DBGLOG("cdf", "[ CDF::processKext KextGK100HalWeb");
 		KernelPatcher::LookupPatch patch {&kextList[KextGK100HalWeb], gk100Find, gk100Repl, sizeof(gk100Find), 1};
 		patcher.applyLookupPatch(&patch);
 		if (patcher.getError() != KernelPatcher::Error::NoError) {
 			SYSLOG("cdf", "failed to apply gk100 web patch %d", patcher.getError());
 			patcher.clearError();
 		}
-		DBGLOG("cdf", "] CDF::processKext true (KextGK100HalWeb)");
+		DBGLOG("cdf", "] CDF::processKext true");
 		return true;
 	}
 
 	if (kextList[KextGM100HalWeb].loadIndex == index) {
+		DBGLOG("cdf", "[ CDF::processKext KextGM100HalWeb");
 		KernelPatcher::LookupPatch patch {&kextList[KextGM100HalWeb], gmp100Find, gmp100Repl, sizeof(gmp100Find), 1};
 		patcher.applyLookupPatch(&patch);
 		if (patcher.getError() != KernelPatcher::Error::NoError) {
 			SYSLOG("cdf", "failed to apply gm100 web patch %d", patcher.getError());
 			patcher.clearError();
 		}
-		DBGLOG("cdf", "] CDF::processKext true (KextGM100HalWeb)");
+		DBGLOG("cdf", "] CDF::processKext true");
 		return true;
 	}
 
 	if (kextList[KextGP100HalWeb].loadIndex == index) {
+		DBGLOG("cdf", "[ CDF::processKext KextGP100HalWeb");
 		KernelPatcher::LookupPatch patch {&kextList[KextGP100HalWeb], gmp100Find, gmp100Repl, sizeof(gmp100Find), 1};
 		patcher.applyLookupPatch(&patch);
 		if (patcher.getError() != KernelPatcher::Error::NoError) {
 			SYSLOG("cdf", "failed to apply gp100 web patch %d", patcher.getError());
 			patcher.clearError();
 		}
-		DBGLOG("cdf", "] CDF::processKext true (KextGP100HalWeb)");
+		DBGLOG("cdf", "] CDF::processKext true");
 		return true;
 	}
 
-	DBGLOG("cdf", "] CDF::processKext false");
+	//DBGLOG("cdf", "] CDF::processKext false");
 	return false;
 }

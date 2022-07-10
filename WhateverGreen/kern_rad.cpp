@@ -304,6 +304,7 @@ IOReturn RAD::wrapAMDRadeonX6000AmdRadeonFramebufferGetAttribute(IOService *fram
 
 bool RAD::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t address, size_t size) {
 	if (kextRadeonX6000Framebuffer.loadIndex == index) {
+		DBGLOG("rad", "[ RAD::processKext RadeonX6000Framebuffer");
 		KernelPatcher::RouteRequest requests[] = {
 			{"_dce_panel_cntl_hw_init", wrapDcePanelCntlHwInit, orgDcePanelCntlHwInit},
 			{"__ZN35AMDRadeonX6000_AmdRadeonFramebuffer25setAttributeForConnectionEijm", wrapAMDRadeonX6000AmdRadeonFramebufferSetAttribute, orgAMDRadeonX6000AmdRadeonFramebufferSetAttribute},
@@ -318,21 +319,28 @@ bool RAD::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t ad
 			SYSLOG("igfx", "failed to resolve _dce_driver_set_backlight");
 			patcher.clearError();
 		}
+		DBGLOG("rad", "] RAD::processKext true");
+		return true;
 	}
 	
 	if (kextRadeonFramebuffer.loadIndex == index) {
+		DBGLOG("rad", "[ RAD::processKext RadeonFramebuffer");
 		if (force24BppMode)
 			process24BitOutput(patcher, kextRadeonFramebuffer, address, size);
+		DBGLOG("rad", "] RAD::processKext true");
 		return true;
 	}
 
 	if (kextRadeonLegacyFramebuffer.loadIndex == index) {
+		DBGLOG("rad", "[ RAD::processKext RadeonLegacyFramebuffer");
 		if (force24BppMode)
 			process24BitOutput(patcher, kextRadeonLegacyFramebuffer, address, size);
+		DBGLOG("rad", "] RAD::processKext true");
 		return true;
 	}
 
 	if (kextRadeonSupport.loadIndex == index) {
+		DBGLOG("rad", "[ RAD::processKext RadeonSupport");
 		processConnectorOverrides(patcher, address, size, true);
 
 		if (getKernelVersion() > KernelVersion::Mojave ||
@@ -346,22 +354,30 @@ bool RAD::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t ad
 			patcher.routeMultiple(index, &request, 1, address, size);
 		}
 
+		DBGLOG("rad", "] RAD::processKext true");
 		return true;
 	}
 
 	if (kextRadeonLegacySupport.loadIndex == index) {
+		DBGLOG("rad", "[ RAD::processKext RadeonLegacySupport");
 		processConnectorOverrides(patcher, address, size, false);
+		DBGLOG("rad", "] RAD::processKext true");
 		return true;
 	}
 
 	if (kextPolarisController.loadIndex == index) {
+		DBGLOG("rad", "[ RAD::processKext PolarisController");
 		KernelPatcher::RouteRequest request("__ZN17AMD9500Controller23findProjectByPartNumberEP20ControllerProperties", findProjectByPartNumber);
 		patcher.routeMultiple(index, &request, 1, address, size);
+		DBGLOG("rad", "] RAD::processKext true");
+		return true;
 	}
 
 	for (size_t i = 0; i < maxHardwareKexts; i++) {
 		if (kextRadeonHardware[i].loadIndex == index) {
+			DBGLOG("rad", "[ RAD::processKext %s", kextRadeonHardware[i].id);
 			processHardwareKext(patcher, i, address, size);
+			DBGLOG("rad", "] RAD::processKext true");
 			return true;
 		}
 	}

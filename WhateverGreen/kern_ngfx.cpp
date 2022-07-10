@@ -106,33 +106,43 @@ void NGFX::processKernel(KernelPatcher &patcher, DeviceInfo *info) {
 
 bool NGFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t address, size_t size) {
 	if (kextList[IndexGeForce].loadIndex == index) {
+		DBGLOG("ngfx", "[ NGFX::processKext GeForce");
 		KernelPatcher::RouteRequest request("__ZN13nvAccelerator18SetAccelPropertiesEv", wrapSetAccelProperties, orgSetAccelProperties);
 		patcher.routeMultiple(index, &request, 1, address, size);
 		restoreLegacyOptimisations(patcher, index, address, size);
+		DBGLOG("ngfx", "] NGFX::processKext true");
 		return true;
 	}
 
 	if (kextList[IndexGeForceWeb].loadIndex == index) {
+		DBGLOG("ngfx", "[ NGFX::processKext GeForceWeb");
 		KernelPatcher::RouteRequest request("__ZN19nvAcceleratorParent18SetAccelPropertiesEv", wrapSetAccelProperties, orgSetAccelProperties);
 		patcher.routeMultiple(index, &request, 1, address, size);
+		DBGLOG("ngfx", "] NGFX::processKext true");
 		return true;
 	}
 
 	if (kextList[IndexNVDAStartupWeb].loadIndex == index) {
+		DBGLOG("ngfx", "[ NGFX::processKext NVDAStartupWeb");
 		KernelPatcher::RouteRequest request("__ZN14NVDAStartupWeb5probeEP9IOServicePi", wrapStartupWebProbe, orgStartupWebProbe);
 		patcher.routeMultiple(index, &request, 1, address, size);
+		DBGLOG("ngfx", "] NGFX::processKext true");
 		return true;
 	}
 
 	if (kextList[IndexIONDRVSupport].loadIndex == index) {
+		DBGLOG("ngfx", "[ NGFX::processKext IONDRVSupport");
 		KernelPatcher::RouteRequest request("__ZN17IONDRVFramebuffer10_doControlEPS_jPv", wrapNdrvDoControl, orgNdrvDoControl);
 		patcher.routeMultiple(index, &request, 1, address, size);
+		DBGLOG("ngfx", "] NGFX::processKext true");
 		return true;
 	}
 
 	if (kextList[IndexNVDAResman].loadIndex == index) {
+		DBGLOG("ngfx", "[ NGFX::processKext NVDAResman");
 		KernelPatcher::RouteRequest request("_nvErrorLog_va", resmanErrorLogVA);
 		patcher.routeMultiple(index, &request, 1, address, size);
+		DBGLOG("ngfx", "] NGFX::processKext true");
 		return true;
 	}
 

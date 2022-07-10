@@ -392,35 +392,12 @@ void WEG::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t ad
 		}
 	}
 
-	if (iofb.processKext(patcher, index, address, size)) {
-		DBGLOG("weg", "] WEG::processKext iofb");
-		return;
-	}
-
-	if (igfx.processKext(patcher, index, address, size)) {
-		DBGLOG("weg", "] WEG::processKext igfx");
-		return;
-	}
-
-	if (ngfx.processKext(patcher, index, address, size)) {
-		DBGLOG("weg", "] WEG::processKext ngfx");
-		return;
-	}
-
-	if (rad.processKext(patcher, index, address, size)) {
-		DBGLOG("weg", "] WEG::processKext rad");
-		return;
-	}
-
-	if (cdf.processKext(patcher, index, address, size)) {
-		DBGLOG("weg", "] WEG::processKext cdf");
-		return;
-	}
-
-	if (dpd.processKext(patcher, index, address, size)) {
-		DBGLOG("weg", "] WEG::processKext dpd");
-		return;
-	}
+	iofb.processKext(patcher, index, address, size);
+	igfx.processKext(patcher, index, address, size);
+	ngfx.processKext(patcher, index, address, size);
+	rad.processKext(patcher, index, address, size);
+	cdf.processKext(patcher, index, address, size);
+	dpd.processKext(patcher, index, address, size);
 
 	DBGLOG("weg", "] WEG::processKext");
 }

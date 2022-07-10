@@ -306,10 +306,11 @@ void IGFX::processKernel(KernelPatcher &patcher, DeviceInfo *info) {
 }
 
 bool IGFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t address, size_t size) {
-	DBGLOG("igfx", "[ IGFX::processKext");
+	//DBGLOG("igfx", "[ IGFX::processKext");
 	auto cpuGeneration = BaseDeviceInfo::get().cpuGeneration;
 
 	if (currentGraphics && currentGraphics->loadIndex == index) {
+		DBGLOG("igfx", "[ IGFX::processKext currentGraphics");
 		if (disableIGTelemetry) {
 			auto symTelemetry = patcher.solveSymbol(index, "__ZN18IGTelemetryManager16prepareTelemetryEj");
 			if (symTelemetry) {
@@ -353,7 +354,9 @@ bool IGFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t a
 	}
 
 	if ((currentFramebuffer && currentFramebuffer->loadIndex == index) ||
-		(currentFramebufferOpt && currentFramebufferOpt->loadIndex == index)) {
+		(currentFramebufferOpt && currentFramebufferOpt->loadIndex == index)
+	) {
+		DBGLOG("igfx", "[ IGFX::processKext currentFramebuffer%s", (currentFramebufferOpt && currentFramebufferOpt->loadIndex) ? "Opt" : "");
 		
 		// Note that the order is reversed at this stage
 		// We first process shared submodules
@@ -447,7 +450,7 @@ bool IGFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t a
 		return true;
 	}
 
-	DBGLOG("igfx", "] IGFX::processKext false");
+	//DBGLOG("igfx", "] IGFX::processKext false");
 	return false;
 }
 
