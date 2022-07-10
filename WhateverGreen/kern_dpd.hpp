@@ -43,21 +43,6 @@ private:
 	 *  Private self instance for callbacks
 	 */
 	static DPD *callbackDPD;
-
-	/**
-	 *  Current proc info containing the right path to displaypolictd
-	 */
-	UserPatcher::ProcInfo *currentProcInfo {nullptr};
-
-	/**
-	 *  Current binary modification containing the correct binary mod
-	 */
-	UserPatcher::BinaryModInfo *currentModInfo {nullptr};
-
-	/**
-	 *  Disable the patches based on -dpdoff boot-arg
-	 */
-	bool disableDPD = false;
 };
 
 #endif /* kern_dpd_hpp */
