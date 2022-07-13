@@ -14,11 +14,14 @@
 #define procdisplaypolicyd "/usr/libexec/displaypolicyd"
 #define binarydisplaypolicyd procdisplaypolicyd
 
+static const uint8_t mtddpathFind[]     = "/System/Library/Displays/Contents/Resources/Overrides/DisplayVendorID-%x/DisplayProductID-%x.mtdd";
+static const uint8_t mtddpathRepl[]     =        "/Library/Displays/Contents/Resources/Overrides/DisplayVendorID-%x/DisplayProductID-%x.mtdd\0\0\0\0\0\0\0";
+
 static const uint8_t overridepathFind[] = "/System/Library/Displays/Contents/Resources/Overrides/DisplayVendorID-%x/DisplayProductID-%x";
 static const uint8_t overridepathRepl[] =        "/Library/Displays/Contents/Resources/Overrides/DisplayVendorID-%x/DisplayProductID-%x\0\0\0\0\0\0\0";
 
-static const uint8_t mtddpathFind[]     = "/System/Library/Displays/Contents/Resources/Overrides/DisplayVendorID-%x/DisplayProductID-%x.mtdd";
-static const uint8_t mtddpathRepl[]     =        "/Library/Displays/Contents/Resources/Overrides/DisplayVendorID-%x/DisplayProductID-%x.mtdd\0\0\0\0\0\0\0";
+static const uint8_t donglepathFind[] = "/System/Library/Displays/Contents/Resources/Overrides/Dongles/%x%x%x%x%x%x%x%x%x";
+static const uint8_t donglepathRepl[] =        "/System/Library/Displays/Contents/Resources/Overrides/Dongles/%x%x%x%x%x%x%x%x%x\0\0\0\0\0\0\0";
 
 static const uint8_t dellUP3218KFind1[] = "\x41\x81\xF8\x47\x41\x00\x00\x75\x2C"; // cmp r8d, 0x4147;  jne xx
 static const uint8_t dellUP3218KRepl1[] = "\x41\x81\xF8\x47\x41\x00\x00\xeb\x2C"; // cmp r8d, 0x4147;  jmp xx
@@ -29,6 +32,14 @@ static const uint8_t dellUP3218KRepl2[] = "\x41\x81\xFD\x47\x41\x00\x00\xeb\x2C"
 static UserPatcher::BinaryModPatch binaryPatch[] {
 	{
 		CPU_TYPE_X86_64, 0, // flags
+		mtddpathFind, mtddpathRepl, arrsize(mtddpathFind), // find, replace, size (including extra null byte)
+		0, // skip  = 0 -> replace all occurrences
+		1, // count = 1 -> 1 set of hex inside the target binaries
+		UserPatcher::FileSegment::SegmentTextCstring,
+		UserPatcher::ProcInfo::SectionDisabled
+	},
+	{
+		CPU_TYPE_X86_64, 0, // flags
 		overridepathFind, overridepathRepl, arrsize(overridepathFind), // find, replace, size (including extra null byte)
 		0, // skip  = 0 -> replace all occurrences
 		1, // count = 1 -> 1 set of hex inside the target binaries
@@ -37,7 +48,7 @@ static UserPatcher::BinaryModPatch binaryPatch[] {
 	},
 	{
 		CPU_TYPE_X86_64, 0, // flags
-		mtddpathFind, mtddpathRepl, arrsize(mtddpathFind), // find, replace, size (including extra null byte)
+		donglepathFind, donglepathRepl, arrsize(donglepathFind), // find, replace, size (including extra null byte)
 		0, // skip  = 0 -> replace all occurrences
 		1, // count = 1 -> 1 set of hex inside the target binaries
 		UserPatcher::FileSegment::SegmentTextCstring,
@@ -83,11 +94,12 @@ void DPD::init() {
 			DBGLOG("dpd", "enabled patch for Displays Override path");
 			binaryPatch[0].section = 1;
 			binaryPatch[1].section = 1;
+			binaryPatch[2].section = 1;
 		}
 		if (patches & dpdUP3218KCheck) {
 			DBGLOG("dpd", "enabled patch for DellUP3218K check");
-			binaryPatch[2].section = 1;
 			binaryPatch[3].section = 1;
+			binaryPatch[4].section = 1;
 		}
 		if (patches) {
 			procInfo.section = 1;
