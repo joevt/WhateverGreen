@@ -2456,6 +2456,11 @@ private:
 	uint32_t maxVGAPixelClock {0};
 
 	/**
+	 *  Max scaler dimension
+	 */
+	uint32_t maxScalerDimension {0};
+
+	/**
 	 *  Framebuffer address space start
 	 */
 	uint8_t *framebufferStart {nullptr};

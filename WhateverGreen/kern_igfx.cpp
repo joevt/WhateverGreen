@@ -433,7 +433,7 @@ bool IGFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t a
 			maxVGAPixelClock = 0;
 			PE_parse_boot_argn("igfxvgaclock", &maxVGAPixelClock, sizeof(maxVGAPixelClock));
 			if (maxVGAPixelClock > 0) {
-				uint8_t *maxVGAPixelClockPtr = (uint8_t*)&maxVGAPixelClockPtr;
+				uint8_t *maxVGAPixelClockPtr = (uint8_t*)&maxVGAPixelClock;
 				uint32_t orgVGAPixelClock = 160000000;
 				uint8_t *orgVGAPixelClockPtr = (uint8_t*)&orgVGAPixelClock;
 
@@ -444,6 +444,19 @@ bool IGFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t a
 				KernelPatcher::LookupPatch VGAPixelClockPatch { currentFramebuffer, findVGAPixelClock, replaceVGAPixelClock, sizeof(findVGAPixelClock), 1, maskVGAPixelClock, maskVGAPixelClock };
 				patcher.applyLookupPatch(&VGAPixelClockPatch);
 				DBGLOG("igfx", "applyVGAPixelClockPatch applied VGA pixel clock patch");
+			}
+			
+			maxScalerDimension = 0;
+			PE_parse_boot_argn("igfxmaxscale", &maxScalerDimension, sizeof(maxScalerDimension));
+			if (maxScalerDimension > 0) {
+				uint8_t *maxScalerDimensionPtr = (uint8_t*)&maxScalerDimension;
+				uint32_t orgMaxScalerDimension = 8191;
+				uint8_t *orgMaxScalerDimensionPtr = (uint8_t*)&orgMaxScalerDimension;
+				const uint8_t findMaxScalerDimension[]    = { 0x48, 0xB8, orgMaxScalerDimensionPtr[0], orgMaxScalerDimensionPtr[1], orgMaxScalerDimensionPtr[2], orgMaxScalerDimensionPtr[3], orgMaxScalerDimensionPtr[0], orgMaxScalerDimensionPtr[1], orgMaxScalerDimensionPtr[2], orgMaxScalerDimensionPtr[3] };
+				const uint8_t replaceMaxScalerDimension[] = { 0x48, 0xB8, maxScalerDimensionPtr[0], maxScalerDimensionPtr[1], maxScalerDimensionPtr[2], maxScalerDimensionPtr[3], maxScalerDimensionPtr[0], maxScalerDimensionPtr[1], maxScalerDimensionPtr[2], maxScalerDimensionPtr[3] };
+				KernelPatcher::LookupPatch MaxScalerDimensionPatch { currentFramebuffer, findMaxScalerDimension, replaceMaxScalerDimension, sizeof(findMaxScalerDimension), 1, NULL, NULL };
+				patcher.applyLookupPatch(&MaxScalerDimensionPatch);
+				DBGLOG("igfx", "applyMaxScalerDimensionPatch applied max scaler dimension patch");
 			}
 		}
 		DBGLOG("igfx", "] IGFX::processKext true");
