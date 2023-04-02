@@ -110,6 +110,26 @@ private:
 
 
 	/**
+	 *  EDID override
+	 */
+	class IOFBEDIDOverride {
+		public:
+			/**
+			 *  an EDID Override
+			 */
+			UInt8 *orgEDID;
+			UInt32 orgSize;
+			UInt8 *newEDID;
+			UInt32 newSize;
+	};
+	IOFBEDIDOverride *iofbEDIDOverrides { nullptr };
+	SInt32 iofbedidCount = 0;
+	SInt32 iofbedidMaxCount = 0;
+
+	void setEDIDOverride(UInt8 *orgEDID, UInt32 orgSize, UInt8 *newEDID, UInt32 newSize);
+
+
+	/**
 	 *  IOFB settings per IOFramebuffer service
 	 */
 	class IOFBVars {
@@ -142,6 +162,8 @@ private:
 			UInt32 iofbColorDepthsSupported = 0; // set only
 			// 0 = don't override
 			// -1 = all bits
+
+			IOFBEDIDOverride *edidOverride = NULL;
 	};
 	typedef IOFBVars* IOFBVarsPtr;
 	IOFBVarsPtr *iofbvars;

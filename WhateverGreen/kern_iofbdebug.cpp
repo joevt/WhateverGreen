@@ -1847,6 +1847,78 @@ void IOFB::UpdateAttribute( IOFramebuffer *service, bool set, IOIndex connectInd
 	}
 } // UpdateAttribute
 
+void IOFB::setEDIDOverride(UInt8 *orgEDID, UInt32 orgSize, UInt8 *newEDID, UInt32 newSize) {
+	DBGLOG("iofb", "[ setEDIDOverride");
+	if (!orgSize) {
+		iofbedidCount = 0;
+		DBGLOG("iofb", "] setEDIDOverride clear all EDID overrides");
+		return;
+	}
+
+	#ifdef DEBUG
+	char hex[128*8];
+	#endif
+	DBGLOG("iofb", "org[%d]: %s", orgSize, HEX(hex, sizeof(hex), orgEDID, orgSize));
+	DBGLOG("iofb", "new[%d]: %s", newSize, HEX(hex, sizeof(hex), newEDID, newSize));
+
+	IOFBEDIDOverride *ov = iofbEDIDOverrides;
+	IOFBEDIDOverride *ovempty = NULL;
+	int i = 0;
+	for (; i < iofbedidCount; i++, ov++) {
+		if (!ovempty && !ov->orgSize)
+			ovempty = ov;
+		if (ov->orgSize == orgSize && !memcmp(ov->orgEDID, orgEDID, orgSize)) {
+			break;
+		}
+	}
+
+	if (i < iofbedidCount) {
+		if (!newSize) {
+			// delete existing EDID override
+			kern_os_free(ov->orgEDID);
+			ov->orgSize = 0;
+		}
+		// change existing EDID override
+		kern_os_free(ov->newEDID);
+		ov->newSize = 0;
+	}
+
+	if (newSize) {
+		if (i >= iofbedidCount) {
+			// add new EDID override
+			if (ovempty) {
+				ov = ovempty;
+			}
+			else {
+				int currentiofbedidNdx = OSIncrementAtomic(&iofbedidCount);
+
+				while (iofbedidCount > iofbedidMaxCount) {
+					OSAddAtomic(10, &iofbedidMaxCount);
+					if (!iofbEDIDOverrides) {
+						iofbEDIDOverrides = (IOFBEDIDOverride*)kern_os_malloc(iofbedidMaxCount * sizeof(IOFBEDIDOverride));
+					}
+					else {
+						iofbEDIDOverrides = (IOFBEDIDOverride*)kern_os_realloc(iofbEDIDOverrides, iofbedidMaxCount * sizeof(IOFBEDIDOverride));
+					}
+					if (!iofbEDIDOverrides) {
+						DBGLOG("iofb", "] setEDIDOverride cannot create list of EDID overrides");
+						return;
+					}
+				}
+				ov = &iofbEDIDOverrides[currentiofbedidNdx];
+			}
+			ov->orgEDID = (UInt8*)kern_os_malloc(orgSize);
+			ov->orgSize = orgSize;
+			memcpy(ov->orgEDID, orgEDID, orgSize);
+		}
+		ov->newEDID = (UInt8*)kern_os_malloc(newSize);
+		ov->newSize = newSize;
+		memcpy(ov->newEDID, newEDID, newSize);
+	}
+	DBGLOG("iofb", "] setEDIDOverride");
+}
+
+
 //========================================================================================
 // Wrapped functions for IOGraphicsDevice, IOFramebuffer, IONDRVFramebuffer
 
@@ -1953,9 +2025,12 @@ IOReturn IOFB::wrapdoI2CRequest( IOFramebuffer *service, UInt32 bus, struct IOI2
 						case 'dbge'                              :
 							// This is a flag that affects all WhateverGreen patches.
 							// Maybe there should be a different flag for each source file?
-							ADDPR(debugEnabled) = true; DBGLOG("iofb", "Setting debugEnabled to %d", val2);
+							DBGLOG("iofb", "Setting debugEnabled to %d", val2);
 							ADDPR(debugEnabled) = val2;
 							break;
+						case 'edid':
+							callbackIOFB->setEDIDOverride((UInt8*)&((UInt32*)request->sendBuffer)[4], val2, (UInt8*)&((UInt32*)request->sendBuffer)[4] + val2, val3);
+
 						default: result = kIOReturnBadArgument; break;
 					}
 					break;
@@ -2022,14 +2097,26 @@ IOReturn IOFB::wrapdoI2CRequest( IOFramebuffer *service, UInt32 bus, struct IOI2
 		}
 	}
 
-	result = iofbVars->iofbvtable->orgdoI2CRequest( service, bus, timing, request );
+	IOFBEDIDOverride *ov = iofbVars->edidOverride;
+	bool didOverride = false;
+	if (ov && request && reqcopy.replyTransactionType == kIOI2CSimpleTransactionType && reqcopy.replyBuffer && reqcopy.replyAddress == 0xa1 && reqcopy.replySubAddress == 0 && reqcopy.replyBytes == 128) {
+		memcpy((void*)reqcopy.replyBuffer, ov->newEDID, reqcopy.replyBytes);
+		request->result = kIOReturnSuccess;
+		result = kIOReturnSuccess;
+		didOverride = true;
+	}
+	else {
+		result = iofbVars->iofbvtable->orgdoI2CRequest( service, bus, timing, request );
+	}
+
 	if (iofbVars->iofbDumpdoI2CRequest) {
 		if (request) {
 			if (reqcopy.replyTransactionType || reqcopy.replyAddress || reqcopy.replySubAddress || reqcopy.replyBytes) {
-				inc = bprintf(buf, bufSize, " (reply:%s addr:0x%x.%x bytes:%d:%s)%s",
+				inc = bprintf(buf, bufSize, " (reply:%s addr:0x%x.%x %sbytes:%d:%s)%s",
 					DumpOneTransactionType(transactionType, sizeof(transactionType), reqcopy.replyTransactionType),
 					reqcopy.replyAddress,
 					reqcopy.replySubAddress,
+					didOverride ? "override" : "",
 					reqcopy.replyBytes,
 					HEX(hexBytes, sizeof(hexBytes), (UInt8*)reqcopy.replyBuffer, reqcopy.replyBytes),
 					DumpOneI2CReserved(reservedStr, sizeof(reservedStr), request)
@@ -2885,36 +2972,112 @@ bool IOFB::wraphasDDCConnect( IOFramebuffer *service, IOIndex connectIndex )
 IOReturn IOFB::wrapgetDDCBlock( IOFramebuffer *service, IOIndex connectIndex, UInt32 blockNumber, IOSelect blockType, IOOptionBits options, UInt8 * data, IOByteCount * length )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
-	char hex[1000];
-	IOReturn result = iofbVars->iofbvtable->orggetDDCBlock( service, connectIndex, blockNumber, blockType, options, data, length );
+	IOFBEDIDOverride *ov = iofbVars->edidOverride;
+
+	char hex[128*8];
+	unsigned int lenBefore = (length ? (unsigned int)*length : 128);
+	unsigned int len = lenBefore;
+	IOReturn result = kIOReturnSuccess;
+
+	if (ov) {
+		if (blockNumber < 1)
+			result = kIOReturnInvalid;
+		else {
+			SInt32 offset = (blockNumber - 1) * 128;
+			if (offset + lenBefore > ov->newSize) {
+				len = offset > ov->newSize ? 0 : ov->newSize - offset;
+				if (length) {
+					*length = len;
+				}
+			}
+			memcpy(data, ov->newEDID + offset, len);
+		}
+	}
+	else {
+		result = iofbVars->iofbvtable->orggetDDCBlock( service, connectIndex, blockNumber, blockType, options, data, length );
+		len = (length ? (unsigned int)*length : 128);
+	}
+
+	#ifdef DEBUG
 	char resultStr[40];
-	unsigned int len = (length ? (unsigned int)*length : 128);
-	DBGLOG("iofb", "[] getDDCBlock fb:0x%llx connectIndex:%d blockNumber:%d blockType:%d options:%x%s bytes:%s",
+	#endif
+	DBGLOG("iofb", "[] getDDCBlock fb:0x%llx connectIndex:%d blockNumber:%d blockType:%d options:%x%s %sbytes:%s",
 		(UInt64)service, connectIndex, blockNumber, blockType, options,
-		DumpOneReturn(resultStr, sizeof(resultStr), result), HEX(hex, sizeof(hex), data, len)
+		DumpOneReturn(resultStr, sizeof(resultStr), result), ov ? "override" : "", HEX(hex, sizeof(hex), data, len)
 	);
+	if (len != lenBefore) {
+		DBGLOG("iofb", "getDDCBlock len changed from %d to %d", lenBefore, len);
+	}
 
 	if (!result) {
-		char propertyName[20];
-		bprintf(propertyName, sizeof(propertyName), "IOFBEDID%d", connectIndex);
-		OSData *oldData = OSDynamicCast(OSData, service->getProperty(propertyName));
-		OSData *edidData;
-		unsigned int newLength = (blockNumber - 1) * 128 + len;
-		if (oldData) {
-			edidData = OSData::withData(oldData);
-		}
-		else {
-			edidData = OSData::withCapacity(128);
-		}
-		if (edidData) {
-			if (edidData->getLength() < newLength) {
-				edidData->appendBytes(NULL, newLength - edidData->getLength());
+		{
+			char propertyName[20];
+			bprintf(propertyName, sizeof(propertyName), "IOFBEDID%d", connectIndex);
+			OSData *oldData = OSDynamicCast(OSData, service->getProperty(propertyName));
+			OSData *edidData;
+			unsigned int newLength = (blockNumber - 1) * 128 + len;
+			if (oldData) {
+				edidData = OSData::withData(oldData);
+			}
+			else {
+				edidData = OSData::withCapacity(128);
+			}
+			if (edidData) {
+				if (edidData->getLength() < newLength) {
+					edidData->appendBytes(NULL, newLength - edidData->getLength());
+				}
+			}
+			if (edidData) {
+				memcpy((UInt8 *)edidData->getBytesNoCopy() + (blockNumber - 1) * 128, data, len);
+				service->setProperty(propertyName, edidData);
+				edidData->release();
 			}
 		}
-		if (edidData) {
-			memcpy((UInt8 *)edidData->getBytesNoCopy() + (blockNumber - 1) * 128, data, len);
-			service->setProperty(propertyName, edidData);
-			edidData->release();
+
+		if (!ov && (blockNumber == 1) && len && !(len & 0x7f)) {
+			ov = callbackIOFB->iofbEDIDOverrides;
+			int extensionReadPos = 0;
+			for (int i = 0; i < callbackIOFB->iofbedidCount; i++, ov++) {
+				UInt32 edidComparePos = ov->orgSize < len ? ov->orgSize : len;
+				if (ov->orgSize && !memcmp(ov->orgEDID, data, edidComparePos)) {
+					DBGLOG("iofb", "[ #%d possible EDID override match first %d bytes", i, edidComparePos);
+					IOReturn result = kIOReturnSuccess;
+					UInt32 extensionComparePos = 0;
+					while (edidComparePos < ov->orgSize) {
+						if (extensionComparePos == extensionReadPos) {
+							IOByteCount length = 128;
+							int readBlockNum = edidComparePos / 128 + 1;
+							DBGLOG("iofb", "read block %d", readBlockNum);
+
+							result = iofbVars->iofbvtable->orggetDDCBlock( service, connectIndex, readBlockNum, blockType, options, (UInt8*)(hex + extensionReadPos), &length );
+							if (result) {
+								DBGLOG("iofb", "failed read block %d", readBlockNum);
+								break;
+							}
+							extensionReadPos += length;
+						}
+						UInt32 extensionBytes = extensionReadPos - extensionComparePos;
+						UInt32 edidBytes = ov->orgSize - edidComparePos;
+						UInt32 compareBytes = edidBytes < extensionBytes ? edidBytes : extensionBytes;
+						DBGLOG("iofb", "compare org_offset:%d extension_offset:%d size:%d", edidComparePos, extensionComparePos, compareBytes);
+						if (memcmp(ov->orgEDID + edidComparePos, hex + extensionComparePos, compareBytes)) {
+							DBGLOG("iofb", "] #%d failed compare", i);
+							break;
+						}
+						edidComparePos += compareBytes;
+						extensionComparePos += compareBytes;
+					}
+
+					if (edidComparePos == ov->orgSize) {
+						memcpy(data, ov->newEDID + (blockNumber - 1) * 128, len);
+						iofbVars->edidOverride = ov;
+						DBGLOG("iofb", "] #%d matched; overridebytes:%s", i, HEX(hex, sizeof(hex), data, len));
+						break;
+					}
+
+					DBGLOG("iofb", "] #%d not matched", i);
+				}
+			}
 		}
 	}
 
