@@ -288,35 +288,34 @@ IOFB::IOFBvtable *IOFB::getIOFBvtable(IOFramebuffer *service) {
 		}
 	}
 
-	if (callbackIOFB->iofbvtablesCount == 0) {
-		callbackIOFB->iofbvtables = new IOFBvtablePtr[100];
+	DBGLOG("iofb", "[ getIOFBvtable new vtable:0x%llx", (uint64_t)vtable);
+	int currentiofbvtablesNdx = OSIncrementAtomic(&callbackIOFB->iofbvtablesCount);
+	
+	while (callbackIOFB->iofbvtablesCount > callbackIOFB->iofbvtablesMaxCount) {
+		OSAddAtomic(10, &callbackIOFB->iofbvtablesMaxCount);
 		if (!callbackIOFB->iofbvtables) {
-			DBGLOG("iofb", "[] getIOFBvtable cannot create list of vtables");
+			DBGLOG("iofb", "creating iofbvtables");
+			callbackIOFB->iofbvtables = (IOFBvtablePtr*)kern_os_malloc(callbackIOFB->iofbvtablesMaxCount * sizeof(IOFBvtablePtr));
+		}
+		else {
+			DBGLOG("iofb", "reallocating iofbvtables");
+			callbackIOFB->iofbvtables = (IOFBvtablePtr*)kern_os_realloc(callbackIOFB->iofbvtables, callbackIOFB->iofbvtablesMaxCount * sizeof(IOFBvtablePtr));
+		}
+		if (!callbackIOFB->iofbvtables) {
+			DBGLOG("iofb", "] getIOFBvtable cannot create iofbvtables size:%d", callbackIOFB->iofbvtablesMaxCount);
 			return NULL;
 		}
 	}
-
-	if (callbackIOFB->iofbvtablesCount >= 100) {
-		DBGLOG("iofb", "[] getIOFBvtable reached maximum vtable count");
+	
+	callbackIOFB->iofbvtables[currentiofbvtablesNdx] = new IOFBvtable;
+	if (!callbackIOFB->iofbvtables[currentiofbvtablesNdx]) {
+		DBGLOG("iofb", "] getIOFBvtable cannot create IOFBvtable");
 		return NULL;
 	}
-
-	int currentiofbvtablescount = OSIncrementAtomic(&callbackIOFB->iofbvtablesCount);
-	if (currentiofbvtablescount >= 100) {
-		DBGLOG("iofb", "[] getIOFBvtable reached maximum vtable count in another thread");
-		callbackIOFB->iofbvtablesCount = 100;
-		return NULL;
-	}
-
-	callbackIOFB->iofbvtables[currentiofbvtablescount] = new IOFBvtable;
-	if (!callbackIOFB->iofbvtables[currentiofbvtablescount]) {
-		DBGLOG("iofb", "[] getIOFBvtable cannot create storage");
-		return NULL;
-	}
-
-	DBGLOG("iofb", "[] getIOFBvtable create storage");
-	callbackIOFB->iofbvtables[currentiofbvtablescount]->vtable = vtable;
-	return callbackIOFB->iofbvtables[currentiofbvtablescount];
+	
+	DBGLOG("iofb", "] getIOFBvtable");
+	callbackIOFB->iofbvtables[currentiofbvtablesNdx]->vtable = vtable;
+	return callbackIOFB->iofbvtables[currentiofbvtablesNdx];
 }
 
 
@@ -327,36 +326,36 @@ IOFB::IOFBVars *IOFB::getIOFBVars(IOFramebuffer *service) {
 		}
 	}
 
-	if (callbackIOFB->iofbvarsCount == 0) {
-		callbackIOFB->iofbvars = new IOFBVarsPtr[100];
+	int currentiofbvarsNdx = OSIncrementAtomic(&callbackIOFB->iofbvarsCount);
+	DBGLOG("iofb", "[ getIOFBVars iofb:%d new IOFramebuffer:0x%llx", currentiofbvarsNdx, (uint64_t)service);
+
+	while (callbackIOFB->iofbvarsCount > callbackIOFB->iofbvarsMaxCount) {
+		OSAddAtomic(10, &callbackIOFB->iofbvarsMaxCount);
 		if (!callbackIOFB->iofbvars) {
-			DBGLOG("iofb", "[] getIOFBVars cannot create list of framebuffers");
+			DBGLOG("iofb", "creating iofbvars");
+			callbackIOFB->iofbvars = (IOFBVarsPtr*)kern_os_malloc(callbackIOFB->iofbvarsMaxCount * sizeof(IOFBVarsPtr));
+		}
+		else {
+			DBGLOG("iofb", "reallocating iofbvars");
+			callbackIOFB->iofbvars = (IOFBVarsPtr*)kern_os_realloc(callbackIOFB->iofbvars, callbackIOFB->iofbvarsMaxCount * sizeof(IOFBVarsPtr));
+		}
+		if (!callbackIOFB->iofbvars) {
+			DBGLOG("iofb", "] getIOFBVars cannot create iofbvars size:%d", callbackIOFB->iofbvarsMaxCount);
 			return NULL;
 		}
 	}
-
-	if (callbackIOFB->iofbvarsCount >= 100) {
-		DBGLOG("iofb", "[] getIOFBVars reached maximum framebuffer count");
+	
+	callbackIOFB->iofbvars[currentiofbvarsNdx] = new IOFBVars;
+	if (!callbackIOFB->iofbvars[currentiofbvarsNdx]) {
+		DBGLOG("iofb", "[] getIOFBVars cannot create IOFBVars");
 		return NULL;
 	}
-
-	int currentiofbvarscount = OSIncrementAtomic(&callbackIOFB->iofbvarsCount);
-	if (currentiofbvarscount >= 100) {
-		DBGLOG("iofb", "[] getIOFBVars reached maximum framebuffer count in another thread");
-		callbackIOFB->iofbvarsCount = 100;
-		return NULL;
-	}
-
-	callbackIOFB->iofbvars[currentiofbvarscount] = new IOFBVars;
-	if (!callbackIOFB->iofbvars[currentiofbvarscount]) {
-		DBGLOG("iofb", "[] getIOFBVars cannot create storage");
-		return NULL;
-	}
-
-	DBGLOG("iofb", "[] getIOFBVars create storage");
-	callbackIOFB->iofbvars[currentiofbvarscount]->fb = (IOFramebuffer*)service;
-	callbackIOFB->iofbvars[currentiofbvarscount]->iofbvtable = getIOFBvtable(service);
-	return callbackIOFB->iofbvars[currentiofbvarscount];
+	
+	DBGLOG("iofb", "] getIOFBVars");
+	callbackIOFB->iofbvars[currentiofbvarsNdx]->fb = service;
+	callbackIOFB->iofbvars[currentiofbvarsNdx]->iofbvtable = getIOFBvtable(service);
+	callbackIOFB->iofbvars[currentiofbvarsNdx]->index = currentiofbvarsNdx;
+	return callbackIOFB->iofbvars[currentiofbvarsNdx];
 }
 
 

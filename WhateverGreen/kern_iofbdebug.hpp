@@ -59,6 +59,7 @@ private:
 	typedef IOFBvtable* IOFBvtablePtr;
 	IOFBvtablePtr *iofbvtables;
 	SInt32 iofbvtablesCount = 0;
+	SInt32 iofbvtablesMaxCount = 0;
 
 	static IOFBvtable *getIOFBvtable(IOFramebuffer *service);
 
@@ -81,6 +82,7 @@ private:
 		public:
 			IOFramebuffer *fb = NULL;
 			IOFBvtable *iofbvtable = NULL;
+			int index = 0;
 
 			bool iofbValidateAll = false;
 			bool iofbSidebandDownRep = false;
@@ -110,6 +112,7 @@ private:
 	typedef IOFBVars* IOFBVarsPtr;
 	IOFBVarsPtr *iofbvars;
 	SInt32 iofbvarsCount = 0;
+	SInt32 iofbvarsMaxCount = 0;
 
 	static IOFBVars *getIOFBVars(IOFramebuffer *service);
 
