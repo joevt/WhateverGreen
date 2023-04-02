@@ -1689,6 +1689,7 @@ IOReturn IOFB::wrapdoI2CRequest( IORegistryEntry *service, UInt32 bus, struct IO
 			switch (category) {
 				case 'iofb':
 					switch (val1) {
+						case 'iofb'                              : *(UInt32*)request->replyBuffer = 'iofb'                                  ; break;
 						case 'vala'                              : *(UInt32*)request->replyBuffer = iofbVars->iofbValidateAll               ; break;
 						case 'sbnd'                              : *(UInt32*)request->replyBuffer = iofbVars->iofbSidebandDownRep           ; break;
 						case 'sdtm'                              : *(UInt32*)request->replyBuffer = iofbVars->iofbDumpsetDetailedTimings    ; break;
