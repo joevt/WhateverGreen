@@ -8,6 +8,8 @@
 #ifndef kern_agdc_h
 #define kern_agdc_h
 
+#include <IOKit/IOUserClient.h>
+
 // Some knowledge here comes from AppleGraphicsDeviceControlUserCommand.h from 10.9 SDK.
 
 #define APPLE_GRAPHICS_DEVICE_CONTOL_VERSION 0x205
@@ -506,6 +508,11 @@ struct AGDCValidateDetailedTiming_t {
     uint16_t                         padding2[6];
     uint32_t                         modeStatus;           // 1 - invalid, 2 - success, 3 - change timing
     uint16_t                         padding3[2];
+};
+
+struct AGDCClientState_t {
+    uint8_t gap[0x38];
+    IOExternalMethodArguments* externalMethodArguments;
 };
 
 #pragma pack(pop)

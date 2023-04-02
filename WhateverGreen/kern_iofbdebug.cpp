@@ -12,12 +12,12 @@
 #include <Headers/kern_iokit.hpp>
 #include <Headers/kern_file.hpp>
 
-#include "kern_iofbdebug.hpp"
-
 #include <IOKit/i2c/IOI2CInterface.h>
 #include <IOKit/ndrvsupport/IONDRVLibraries.h>
 #include <IOKit/graphics/IOGraphicsTypes.h>
 
+#include "kern_iofbdebug.hpp"
+#include "kern_agdc.hpp"
 
 int bprintf(char * buf, size_t bufSize, const char * format, ...) __printflike(3, 4);
 
@@ -208,13 +208,16 @@ enum // 244
 // IOFB patch
 
 static const char *pathIOGraphics[] { "/System/Library/Extensions/IOGraphicsFamily.kext/IOGraphicsFamily" };
+static const char *pathAGDC[]       { "/System/Library/Extensions/AppleGraphicsControl.kext/Contents/PlugIns/AppleGraphicsDeviceControl.kext/Contents/MacOS/AppleGraphicsDeviceControl" };
 
 static KernelPatcher::KextInfo kextList[] {
 	{ "com.apple.iokit.IOGraphicsFamily", pathIOGraphics, arrsize(pathIOGraphics), {true}, {}, KernelPatcher::KextInfo::Unloaded },
+	{ "com.apple.AppleGraphicsDeviceControl", pathAGDC      , arrsize(pathAGDC      ), {true}, {}, KernelPatcher::KextInfo::Unloaded },
 };
 
 enum : size_t {
 	KextIOGraphics,
+	KextAGDC,
 };
 
 
@@ -238,23 +241,27 @@ void IOFB::processKernel(KernelPatcher &patcher, DeviceInfo *info) {
 	// -iofbon -> force enable
 	// -iofboff -> force disable
 	DBGLOG("iofb", "[ processKernel");
-	disableIOFB = checkKernelArgument("-iofboff");
 
+	bool disableIOFB = checkKernelArgument("-iofboff");
 	bool patchIODB = false;
-
 	if (!disableIOFB) {
 		if (checkKernelArgument("-iofbon")) {
 			patchIODB = true;
 		}
 	}
 
-	if (!patchIODB) {
-		for (size_t i = 0; i < arrsize(kextList); i++)
-			kextList[i].switchOff();
-		disableIOFB = true;
+	bool disableAGDC = checkKernelArgument("-agdcoff");
+	bool patchAGDC = false;
+	if (!disableAGDC) {
+		if (checkKernelArgument("-agdcbon")) {
+			patchAGDC = true;
+		}
 	}
 
-	DBGLOG("iofb", "] processKernel patchIODB:%d disableIOFB:%d", patchIODB, disableIOFB);
+	if (!patchIODB) kextList[KextIOGraphics].switchOff();
+	if (!patchAGDC) kextList[KextAGDC].switchOff();
+
+	DBGLOG("iofb", "] processKernel patchIODB:%d disableIOFB:%d patchAGDC:%d disableAGDC:%d", patchIODB, disableIOFB, patchAGDC, disableAGDC);
 }
 
 
@@ -262,7 +269,6 @@ bool IOFB::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t a
 	//DBGLOG("iofb", "[ processKext");
 
 	if (kextList[KextIOGraphics].loadIndex == index) {
-		// __ZN13IOFramebuffer6attachEP9IOService:        // IOFramebuffer::attach(IOService*)
 		KernelPatcher::RouteRequest request("__ZN13IOFramebuffer6initFBEv", wrapFramebufferInit, orgFramebufferInit);
 		patcher.routeMultiple(index, &request, 1, address, size);
 
@@ -271,6 +277,13 @@ bool IOFB::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t a
 		}
 
 		DBGLOG("iofb", "[] processKext kextIOGraphics true");
+		return true;
+	}
+
+	if (kextList[KextAGDC].loadIndex == index) {
+		KernelPatcher::RouteRequest request("__ZN26AppleGraphicsDeviceControl5startEP9IOService", wrapAppleGraphicsDeviceControlstart, orgAppleGraphicsDeviceControlstart);
+		patcher.routeMultiple(index, &request, 1, address, size);
+		DBGLOG("agdc", "[] processKext kextAGDC true");
 		return true;
 	}
 
@@ -290,7 +303,7 @@ IOFB::IOFBvtable *IOFB::getIOFBvtable(IOFramebuffer *service) {
 
 	DBGLOG("iofb", "[ getIOFBvtable new vtable:0x%llx", (uint64_t)vtable);
 	int currentiofbvtablesNdx = OSIncrementAtomic(&callbackIOFB->iofbvtablesCount);
-	
+
 	while (callbackIOFB->iofbvtablesCount > callbackIOFB->iofbvtablesMaxCount) {
 		OSAddAtomic(10, &callbackIOFB->iofbvtablesMaxCount);
 		if (!callbackIOFB->iofbvtables) {
@@ -306,16 +319,56 @@ IOFB::IOFBvtable *IOFB::getIOFBvtable(IOFramebuffer *service) {
 			return NULL;
 		}
 	}
-	
+
 	callbackIOFB->iofbvtables[currentiofbvtablesNdx] = new IOFBvtable;
 	if (!callbackIOFB->iofbvtables[currentiofbvtablesNdx]) {
 		DBGLOG("iofb", "] getIOFBvtable cannot create IOFBvtable");
 		return NULL;
 	}
-	
+
 	DBGLOG("iofb", "] getIOFBvtable");
 	callbackIOFB->iofbvtables[currentiofbvtablesNdx]->vtable = vtable;
 	return callbackIOFB->iofbvtables[currentiofbvtablesNdx];
+}
+
+
+IOFB::AGDCvtable *IOFB::getAGDCvtable(IOService *service) {
+	uintptr_t vtable = (UInt64)reinterpret_cast<uintptr_t **>(service)[0];
+
+	for (int i = 0; i < callbackIOFB->agdcvtablesCount; i++) {
+		if (callbackIOFB->agdcvtables[i] && callbackIOFB->agdcvtables[i]->vtable == vtable) {
+			return callbackIOFB->agdcvtables[i];
+		}
+	}
+
+	DBGLOG("agdc", "[ getAGDCvtable new vtable:0x%llx", (uint64_t)vtable);
+	int currentagdcvtablesNdx = OSIncrementAtomic(&callbackIOFB->agdcvtablesCount);
+
+	while (callbackIOFB->agdcvtablesCount > callbackIOFB->agdcvtablesMaxCount) {
+		OSAddAtomic(10, &callbackIOFB->agdcvtablesMaxCount);
+		if (!callbackIOFB->agdcvtables) {
+			DBGLOG("agdc", "creating agdcvtables");
+			callbackIOFB->agdcvtables = (AGDCvtablePtr*)kern_os_malloc(callbackIOFB->agdcvtablesMaxCount * sizeof(AGDCvtablePtr));
+		}
+		else {
+			DBGLOG("agdc", "reallocating agdcvtables");
+			callbackIOFB->agdcvtables = (AGDCvtablePtr*)kern_os_realloc(callbackIOFB->agdcvtables, callbackIOFB->agdcvtablesMaxCount * sizeof(AGDCvtablePtr));
+		}
+		if (!callbackIOFB->agdcvtables) {
+			DBGLOG("agdc", "] getAGDCvtable cannot create agdcvtables size:%d", callbackIOFB->agdcvtablesMaxCount);
+			return NULL;
+		}
+	}
+
+	callbackIOFB->agdcvtables[currentagdcvtablesNdx] = new AGDCvtable;
+	if (!callbackIOFB->agdcvtables[currentagdcvtablesNdx]) {
+		DBGLOG("agdc", "] getAGDCvtable cannot create AGDCvtable");
+		return NULL;
+	}
+
+	DBGLOG("agdc", "] getAGDCvtable");
+	callbackIOFB->agdcvtables[currentagdcvtablesNdx]->vtable = vtable;
+	return callbackIOFB->agdcvtables[currentagdcvtablesNdx];
 }
 
 
@@ -344,18 +397,58 @@ IOFB::IOFBVars *IOFB::getIOFBVars(IOFramebuffer *service) {
 			return NULL;
 		}
 	}
-	
+
 	callbackIOFB->iofbvars[currentiofbvarsNdx] = new IOFBVars;
 	if (!callbackIOFB->iofbvars[currentiofbvarsNdx]) {
 		DBGLOG("iofb", "[] getIOFBVars cannot create IOFBVars");
 		return NULL;
 	}
-	
+
 	DBGLOG("iofb", "] getIOFBVars");
 	callbackIOFB->iofbvars[currentiofbvarsNdx]->fb = service;
 	callbackIOFB->iofbvars[currentiofbvarsNdx]->iofbvtable = getIOFBvtable(service);
 	callbackIOFB->iofbvars[currentiofbvarsNdx]->index = currentiofbvarsNdx;
 	return callbackIOFB->iofbvars[currentiofbvarsNdx];
+}
+
+
+IOFB::AGDCVars *IOFB::getAGDCVars(IOService *service) {
+	for (int i = 0; i < callbackIOFB->agdcvarsCount; i++) {
+		if (callbackIOFB->agdcvars[i] && callbackIOFB->agdcvars[i]->agdc == service) {
+			return callbackIOFB->agdcvars[i];
+		}
+	}
+
+	int currentagdcvarsNdx = OSIncrementAtomic(&callbackIOFB->agdcvarsCount);
+	DBGLOG("agdc", "[ getAGDCVars agdc:%d new AppleGraphicsDeviceControl:0x%llx", currentagdcvarsNdx, (uint64_t)service);
+
+	while (callbackIOFB->agdcvarsCount > callbackIOFB->agdcvarsMaxCount) {
+		OSAddAtomic(10, &callbackIOFB->agdcvarsMaxCount);
+		if (!callbackIOFB->agdcvars) {
+			DBGLOG("agdc", "creating agdcvars");
+			callbackIOFB->agdcvars = (AGDCVarsPtr*)kern_os_malloc(callbackIOFB->agdcvarsMaxCount * sizeof(AGDCVarsPtr));
+		}
+		else {
+			DBGLOG("agdc", "reallocating agdcvars");
+			callbackIOFB->agdcvars = (AGDCVarsPtr*)kern_os_realloc(callbackIOFB->agdcvars, callbackIOFB->agdcvarsMaxCount * sizeof(AGDCVarsPtr));
+		}
+		if (!callbackIOFB->agdcvars) {
+			DBGLOG("agdc", "] getAGDCVars cannot create agdcvars size:%d", callbackIOFB->agdcvarsMaxCount);
+			return NULL;
+		}
+	}
+
+	callbackIOFB->agdcvars[currentagdcvarsNdx] = new AGDCVars;
+	if (!callbackIOFB->agdcvars[currentagdcvarsNdx]) {
+		DBGLOG("agdc", "[] getAGDCVars cannot create AGDCVars");
+		return NULL;
+	}
+
+	DBGLOG("agdc", "] getAGDCVars");
+	callbackIOFB->agdcvars[currentagdcvarsNdx]->agdc = service;
+	callbackIOFB->agdcvars[currentagdcvarsNdx]->agdcvtable = getAGDCvtable(service);
+	callbackIOFB->agdcvars[currentagdcvarsNdx]->index = currentagdcvarsNdx;
+	return callbackIOFB->agdcvars[currentagdcvarsNdx];
 }
 
 
@@ -399,6 +492,32 @@ void IOFB::wrapFramebufferInit(IOFramebuffer *fb) {
 
 	DBGLOG("iofb", "] wrapFramebufferInit");
 }
+
+
+void IOFB::wrapAppleGraphicsDeviceControlstart(IOService *agdc) {
+	DBGLOG("agdc", "[ wrapAppleGraphicsDeviceControlstart agdc:0x%llx vtable:0x%llx", (UInt64)agdc, (UInt64)reinterpret_cast<uintptr_t **>(agdc)[0]);
+
+	AGDCVars *agdcVars = callbackIOFB->getAGDCVars(agdc);
+	if (agdcVars) {
+		size_t maxvtableIndex = AppleGraphicsDeviceControl_vtableIndex::vendor_doDeviceAttribute2;
+
+		#define onevtableitem1(_patch, _index, _result, _name, _params) \
+			if (IOFB::AppleGraphicsDeviceControl_vtableIndex::_name <= maxvtableIndex) { \
+				if (0) DBGLOG("agdc", "routeVirtual IOFB::AppleGraphicsDeviceControl_vtableIndex::%s = %d, wrap%s, &agdcVars->org%s", # _name, (int)IOFB::AppleGraphicsDeviceControl_vtableIndex::_name, # _name, # _name); \
+				KernelPatcher::routeVirtual(agdc, IOFB::AppleGraphicsDeviceControl_vtableIndex::_name, wrap ## _name, &agdcVars->agdcvtable->org ## _name); \
+			}
+		#define onevtableitem0(...)
+		#define onevtableitem(_patch, _index, _result, _name, _params) onevtableitem ## _patch(_patch, _index, _result, _name, _params)
+		#include "AppleGraphicsDeviceControl_vtable.hpp"
+	}
+
+	//DBGLOG("agdc", "[ wrapAppleGraphicsDeviceControlstart");
+	FunctionCast(wrapAppleGraphicsDeviceControlstart, callbackIOFB->orgAppleGraphicsDeviceControlstart)(agdc);
+	//DBGLOG("agdc", "] wrapAppleGraphicsDeviceControlstart");
+
+	DBGLOG("agdc", "] wrapAppleGraphicsDeviceControlstart");
+}
+
 
 //========================================================================================
 //  How to convert IOFramebuffer_vtable.hpp into wrap* functions:
@@ -1581,6 +1700,104 @@ static char * DumpOneI2CReserved(char * buf, size_t bufSize, IOI2CRequest * requ
 	return result;
 } // DumpOneI2CReserved
 
+
+const char * AGDCGetAttributeName(UInt32 attribute) {
+	const char *name;
+	switch (attribute) {
+		#define m(x) case x: name = #x; break;
+		m( kAGDCVendorInfo                         )
+		m( kAGDCVendorEnableController             )
+		m( kAGDCPMInfo                             )
+		m( kAGDCPMStateCeiling                     )
+		m( kAGDCPMStateFloor                       )
+		m( kAGDCPMPState                           )
+		m( kAGDCPMPowerLimit                       )
+		m( kAGDCPMGetGPUInfo                       )
+		m( kAGDCPMGetPStateFreqTable               )
+		m( kAGDCPMGetPStateResidency               )
+		m( kAGDCPMGetCStateNames                   )
+		m( kAGDCPMGetCStateResidency               )
+		m( kAGDCPMGetMiscCntrNum                   )
+		m( kAGDCPMGetMiscCntrInfo                  )
+		m( kAGDCPMGetMiscCntr                      )
+		m( kAGDCPMTakeCPStateResidencySnapshot     )
+		m( kAGDCPMGetPStateResidencyDiff           )
+		m( kAGDCPMGetCStateResidencyDiff           )
+		m( kAGDCPMGetPStateResidencyDiffAbs        )
+		m( kAGDCFBPerFramebufferCMD                )
+		m( kAGDCFBOnline                           )
+		m( kAGDCFBSetEDID                          )
+		m( kAGDCFBSetMode                          )
+		m( kAGDCFBInjectEvent                      )
+		m( kAGDCFBDoControl                        )
+		m( kAGDCFBDPLinkConfig                     )
+		m( kAGDCFBSetEDIDEx                        )
+		m( kAGDCFBGetCapability                    )
+		m( kAGDCFBGetCapabilityEx                  )
+		m( kAGDCMultiLinkConfig                    )
+		m( kAGDCLinkConfig                         )
+		m( kAGDCRegisterCallback                   )
+		m( kAGDCGetPortStatus                      )
+		m( kAGDCConfigureAudio                     )
+		m( kAGDCCallbackCapability                 )
+		m( kAGDCStreamSleepControl                 )
+		m( kAGDCPortEnable                         )
+		m( kAGDCPortCapability                     )
+		m( kAGDCDiagnoseGetDevicePropertySize      )
+		m( kAGDCDiagnoseGetDeviceProperties        )
+		m( kAGDCGPUCapability                      )
+		m( kAGDCStreamAssociate                    )
+		m( kAGDCStreamRequest                      )
+		m( kAGDCStreamAccessI2C                    )
+		m( kAGDCStreamAccessI2CCapability          )
+		m( kAGDCStreamAccessAUX                    )
+		m( kAGDCStreamGetEDID                      )
+		m( kAGDCStreamSetState                     )
+		m( kAGDCStreamConfig                       )
+		m( kAGDCEnableController                   )
+		m( kAGDCTrainingBegin                      )
+		m( kAGDCTrainingAttempt                    )
+		m( kAGDCTrainingEnd                        )
+		m( kAGDCTestConfiguration                  )
+		m( kAGDCCommitConfiguration                )
+		m( kAGDCReleaseConfiguration               )
+		m( kAGDCPluginMetricsPlug                  )
+		m( kAGDCPluginMetricsUnPlug                )
+		m( kAGDCPluginMetricsHPD                   )
+		m( kAGDCPluginMetricsSPI                   )
+		m( kAGDCPluginMetricsSyncLT                )
+		m( kAGDCPluginMetricsSyncLTEnd             )
+		m( kAGDCPluginMetricsLTBegin               )
+		m( kAGDCPluginMetricsLTEnd                 )
+		m( kAGDCPluginMetricsDisplayInfo           )
+		m( kAGDCPluginMetricsMonitorInfo           )
+		m( kAGDCPluginMetricsLightUpDp             )
+		m( kAGDCPluginMetricsHDCPStart             )
+		m( kAGDCPluginMetricsFirstPhaseComplete    )
+		m( kAGDCPluginMetricsLocalityCheck         )
+		m( kAGDCPluginMetricsRepeaterAuthenticatio )
+		m( kAGDCPluginMetricsHDCPEncryption        )
+		m( kAGDCPluginMetricsHPDSinktoTB           )
+		m( kAGDCPluginMetricsHPDTBtoGPU            )
+		m( kAGDCPluginMetricsVersion               )
+		m( kAGDCPluginMetricsGetMetricInfo         )
+		m( kAGDCPluginMetricsGetMetricData         )
+		m( kAGDCPluginMetricsMarker                )
+		m( kAGDCPluginMetricsGetMessageTracer      )
+		m( kAGDCPluginMetricsXgDiscovery           )
+		m( kAGDCPluginMetricsXgDriversStart        )
+		m( kAGDCPluginMetricsXgPublished           )
+		m( kAGDCPluginMetricsXgResetPort           )
+		m( kAGDCPluginMetricsPowerOff              )
+		m( kAGDCPluginMetricsPowerOn               )
+		m( kAGDCPluginMetricsSPIData               )
+		m( kAGDCPluginMetricsEFIData               )
+		#undef m
+		default: name = NULL;
+	}
+	return name;
+}
+
 //========================================================================================
 // Utility functions
 
@@ -1625,13 +1842,13 @@ void IOFB::UpdateAttribute( IOFramebuffer *service, bool set, IOIndex connectInd
 		}
 		array->setObject(idx, data);
 		data->release();
-		
+
 		service->setProperty(kIOFBAttributesKey, array);
 	}
 } // UpdateAttribute
 
 //========================================================================================
-// Wrapped functions
+// Wrapped functions for IOGraphicsDevice, IOFramebuffer, IONDRVFramebuffer
 
 void IOFB::wraphideCursor( IOFramebuffer *service )
 {
@@ -2353,7 +2570,7 @@ IOReturn IOFB::wrapvalidateDetailedTiming( IOFramebuffer *service, void * descri
 			data->appendBytes(description, (unsigned int)descripSize);
 			array->setObject(idx, data);
 			data->release();
-			
+
 			service->setProperty(kIOFBInvalidModesKey, array);
 		}
 	}
@@ -2516,7 +2733,7 @@ IOReturn IOFB::wrapgetAttributeForConnection( IOFramebuffer *service, IOIndex co
 		);
 	}
 #endif
-	
+
 	callbackIOFB->UpdateAttribute( service, false, connectIndex, attribute, result, value, size);
 
 	if (attribute == kConnectionControllerDepthsSupported && iofbVars->iofbControllerDepthsSupported && (!value || *value != iofbVars->iofbControllerDepthsSupported)) {
@@ -2906,3 +3123,513 @@ IOTVector * IOFB::wrapundefinedSymbolHandler( IONDRVFramebuffer *service, const 
 
 
 //========================================================================================
+// Wrapped functions for AppleGraphicsDeviceControl
+
+void IOFB::Dump_doDeviceAttribute( IOReturn result, bool isstart, bool istwo, IOFB::AGDCVars *agdcVars, uint32_t attribute, unsigned long* structIn, unsigned long structInSize, unsigned long* structOut, unsigned long* structOutSize, void* es ) {
+	#ifdef DEBUG
+	const char *attributeStr = AGDCGetAttributeName(attribute);
+	char resultStr[40];
+	#endif
+	char s[1000];
+	char a[4000];
+	char b[200];
+
+	a[0] = '\0';
+
+	int psin = 0;
+	int psout = 0;
+	int inc = 0;
+	int inc0, inc1, inc2, inc3;
+
+	IOExternalMethodArguments *em;
+
+	if (es) {
+		if (istwo) {
+			AGDCClientState_t *cs = (AGDCClientState_t*)es;
+			em = cs->externalMethodArguments;
+			inc += bprintf(s+inc, sizeof(s)-inc, ""); // " {"
+		}
+		else {
+			em = (IOExternalMethodArguments*)es;
+			inc += bprintf(s+inc, sizeof(s)-inc, "");
+		}
+
+		if (em) {
+			inc0 = inc;
+			inc += bprintf(s+inc, sizeof(s)-inc, " { ");
+			if (em->version != 2) inc += bprintf(s+inc, sizeof(s)-inc, "%sver:%d", inc>inc0?" ":"", em->version);
+			if (em->selector != attribute) inc += bprintf(s+inc, sizeof(s)-inc, "%sselect:0x%x", inc>inc0?" ":"", em->selector);
+			if (em->asyncWakePort || em->asyncReference || em->asyncReferenceCount) {
+				inc += bprintf(s+inc, sizeof(s)-inc, "%sasync(", inc>inc0?" ":"");
+				inc1 = inc;
+				if (em->asyncWakePort) inc += bprintf(s+inc, sizeof(s)-inc, "%sWakePort:0x%llx", inc>inc1?" ":"", (uint64_t)em->asyncWakePort);
+				if (em->asyncReference || em->asyncReferenceCount) {
+					inc += bprintf(s+inc, sizeof(s)-inc, "%sRef(", inc>inc1?" ":"");
+					inc2 = inc;
+					if (em->asyncReference) inc += bprintf(s+inc, sizeof(s)-inc, "%s0x%llx", inc>inc2?" ":"", (uint64_t)em->asyncReference);
+					if (em->asyncReferenceCount) inc += bprintf(s+inc, sizeof(s)-inc, "%sCount:%d", inc>inc2?" ":"", em->asyncReferenceCount);
+					inc += bprintf(s+inc, sizeof(s)-inc, ")");
+				}
+				inc += bprintf(s+inc, sizeof(s)-inc, ")");
+			}
+			if ((em->scalarInput && em->scalarInputCount) || (em->scalarOutput && em->scalarOutputCount)) {
+				inc += bprintf(s+inc, sizeof(s)-inc, "%sscal(", inc>inc0?" ":"");
+				inc1 = inc;
+				if (em->scalarInput && em->scalarInputCount) {
+					inc += bprintf(s+inc, sizeof(s)-inc, "%sIn(", inc>inc1?" ":"");
+					inc2 = inc;
+					if (em->scalarInputCount == 1 && *em->scalarInput == attribute)
+						inc += bprintf(s+inc, sizeof(s)-inc, "%sattr", inc>inc2?" ":"");
+					else
+						inc += bprintf(s+inc, sizeof(s)-inc, "%s0x%llx", inc>inc2?" ":"", *em->scalarInput);
+					if (em->scalarInputCount > 1) inc += bprintf(s+inc, sizeof(s)-inc, "%sCount:%d", inc>inc2?" ":"", em->scalarInputCount);
+					inc += bprintf(s+inc, sizeof(s)-inc, ")");
+				}
+				if (em->scalarOutput && em->scalarOutputCount) {
+					inc += bprintf(s+inc, sizeof(s)-inc, "%sOut(", inc>inc1?" ":"");
+					inc2 = inc;
+					inc += bprintf(s+inc, sizeof(s)-inc, "%s0x%llx", inc>inc2?" ":"", *em->scalarOutput);
+					if (em->scalarOutputCount > 1) inc += bprintf(s+inc, sizeof(s)-inc, "%sCount:%d", inc>inc2?" ":"", em->scalarOutputCount);
+					inc += bprintf(s+inc, sizeof(s)-inc, ")");
+				}
+				inc += bprintf(s+inc, sizeof(s)-inc, ")");
+			}
+
+			if ((em->structureInput && em->structureInputSize) || em->structureInputDescriptor || (em->structureOutput && em->structureOutputSize) || em->structureOutputDescriptor || em->structureOutputDescriptorSize || em->structureVariableOutputData) {
+				inc += bprintf(s+inc, sizeof(s)-inc, "%sstruc(", inc>inc0?" ":"");
+				inc1 = inc;
+
+				if ((em->structureInput == structIn && em->structureInputSize == structInSize) && (em->structureOutput == structOut && structOutSize && em->structureOutputSize == *structOutSize) && !em->structureInputDescriptor && !em->structureOutputDescriptor && !em->structureOutputDescriptorSize) {
+					inc += bprintf(s+inc, sizeof(s)-inc, "%ssame", inc>inc1?" ":"");
+				}
+				else {
+					if ((em->structureInput && em->structureInputSize) || em->structureInputDescriptor) {
+						inc += bprintf(s+inc, sizeof(s)-inc, "%sIn(", inc>inc1?" ":"");
+						inc2 = inc;
+						if (em->structureInput == structIn && em->structureInputSize == structInSize)
+							inc += bprintf(s+inc, sizeof(s)-inc, "%ssame", inc>inc2?" ":"");
+						else {
+							if (em->structureInput && em->structureInputSize) inc += bprintf(s+inc, sizeof(s)-inc, "%s0x%llx", inc>inc2?" ":"", (uint64_t)em->structureInput);
+							if (em->structureInputSize) inc += bprintf(s+inc, sizeof(s)-inc, "%sSz:%d", inc>inc2?" ":"", em->structureInputSize);
+						}
+						if (em->structureInputDescriptor) inc += bprintf(s+inc, sizeof(s)-inc, "%sDescLen:%lld", inc>inc2?" ":"", em->structureInputDescriptor->getLength());
+						inc += bprintf(s+inc, sizeof(s)-inc, ")");
+					}
+
+					if ((em->structureOutput && em->structureOutputSize) || em->structureOutputDescriptor || em->structureOutputDescriptorSize) {
+						inc += bprintf(s+inc, sizeof(s)-inc, "%sOut(", inc>inc1?" ":"");
+						inc2 = inc;
+						if (em->structureOutput == structOut && structOutSize && em->structureOutputSize == *structOutSize)
+							inc += bprintf(s+inc, sizeof(s)-inc, "%ssame", inc>inc2?" ":"");
+						else {
+							if (em->structureOutput && em->structureOutputSize) inc += bprintf(s+inc, sizeof(s)-inc, "%s0x%llx", inc>inc2?" ":"", (uint64_t)em->structureOutput);
+							if (em->structureOutputSize) inc += bprintf(s+inc, sizeof(s)-inc, "%sSz:%d", inc>inc2?" ":"", em->structureOutputSize);
+						}
+						if (em->structureOutputDescriptor || em->structureOutputDescriptorSize) {
+							inc += bprintf(s+inc, sizeof(s)-inc, "%sDesc(", inc>inc2?" ":"");
+							inc3 = inc;
+							if (em->structureOutputDescriptor) inc += bprintf(s+inc, sizeof(s)-inc, "%sLen:%lld", inc>inc3?" ":"", (uint64_t)em->structureOutputDescriptor->getLength());
+							if (em->structureOutputDescriptorSize) inc += bprintf(s+inc, sizeof(s)-inc, "%sSz:%d", inc>inc3?" ":"", em->structureOutputDescriptorSize);
+							inc += bprintf(s+inc, sizeof(s)-inc, ")");
+						}
+						inc += bprintf(s+inc, sizeof(s)-inc, ")");
+					}
+					if (em->structureVariableOutputData) inc += bprintf(s+inc, sizeof(s)-inc, "%sVarData:0x%llx", inc>inc1?" ":"", (uint64_t)em->structureVariableOutputData);
+				}
+				inc += bprintf(s+inc, sizeof(s)-inc, ")");
+			}
+			inc += bprintf(s+inc, sizeof(s)-inc, " }");
+		} // if em
+		else {
+			inc += bprintf(s+inc, sizeof(s)-inc, " NULL");
+		}
+
+		if (istwo) {
+			inc += bprintf(s+inc, sizeof(s)-inc, ""); // " }"
+		}
+	} // if es
+	else {
+		inc += bprintf(s+inc, sizeof(s)-inc, " NULL");
+	}
+#if 0
+	char hex[520];
+	char unknownstr[30];
+	char unknownstr2[30];
+	char timinginfo[1000];
+	void *p = structIn;
+	IODetailedTimingInformationV2 timing;
+
+	inc = 0;
+	switch (attribute) {
+
+		case kAGDCVendorInfo: {
+			AGDCVendorInfo_t *t = (AGDCVendorInfo_t *)p;
+			ps = sizeof(*t);
+			bprintf(a, sizeof(a), " 0x%llx = { ver:0x%x 0x%x=\"%s\" %s }",
+				(uint64_t)t,
+				t->Version,
+				t->VendorID,
+				t->VendorString,
+				t->VendorClass == kAGDCVendorClassReserved              ? "kAGDCVendorClassReserved" :
+				t->VendorClass == kAGDCVendorClassIntegratedGPU         ? "kAGDCVendorClassIntegratedGPU" :
+				t->VendorClass == kAGDCVendorClassDiscreteGPU           ? "kAGDCVendorClassDiscreteGPU" :
+				t->VendorClass == kAGDCVendorClassOtherHW               ? "kAGDCVendorClassOtherHW" :
+				t->VendorClass == kAGDCVendorClassOtherSW               ? "kAGDCVendorClassOtherSW" :
+				t->VendorClass == kAGDCVendorClassAppleGPUPolicyManager ? "kAGDCVendorClassAppleGPUPolicyManager" :
+				t->VendorClass == kAGDCVendorClassAppleGPUPowerManager  ? "kAGDCVendorClassAppleGPUPowerManager" :
+				UNKNOWN_VALUE(unknownstr, sizeof(unknownstr), t->VendorClass)
+			);
+			break;
+		}
+
+		case kAGDCVendorEnableController: {
+			AGDCVendorControllerEnable_t *t = (AGDCVendorControllerEnable_t *)p;
+			ps = sizeof(*t);
+			bprintf(a, sizeof(a), " 0x%llx = { enabled:0x%x }",
+				(uint64_t)t,
+				t->enabled
+			);
+			break;
+		}
+
+		case kAGDCGPUCapability: {
+			AGDCGPUCapability_t *t = (AGDCGPUCapability_t *)p;
+			ps = sizeof(*t);
+			bprintf(a, sizeof(a), " 0x%llx = { portMap:0x%llx MSTPortMap:0x%llx ddcTransportMap:0x%llx auxTransportMap:0x%llx numberOfStreams(DVI:%d DP:%d MST:%d max:%d) numberOfFramebuffers:%d }",
+				(uint64_t)t,
+				t->gpu.portMap,
+				t->gpu.MSTPortMap,
+				t->gpu.ddcTransportMap,
+				t->gpu.auxTransportMap,
+				t->gpu.numberOfStreams.DVI,
+				t->gpu.numberOfStreams.DP,
+				t->gpu.numberOfStreams.MST,
+				t->gpu.numberOfStreams.maximum,
+				t->gpu.numberOfFramebuffers
+			);
+			break;
+		}
+
+		case kAGDCStreamAssociate: {
+			AGDCStreamAssociate_t *t = (AGDCStreamAssociate_t *)p;
+			ps = sizeof(*t);
+			bprintf(a, sizeof(a), " 0x%llx = { id:%d address(port:%d stream:0x%x) }",
+				(uint64_t)t,
+				t->id,
+				t->address.port,
+				t->address.stream
+			);
+			break;
+		}
+
+		case kAGDCStreamRequest: {
+			AGDCStreamRequest_t *t = (AGDCStreamRequest_t *)p;
+			ps = sizeof(*t);
+			bprintf(a, sizeof(a), " 0x%llx = { link0(port:%d stream:0x%x) link1(port:%d stream:0x%x) link2(port:%d stream:0x%x) link3(port:%d stream:0x%x) id:%d groupID:%d }",
+				(uint64_t)t,
+				t->link[0].address.port,
+				t->link[0].address.stream,
+				t->link[1].address.port,
+				t->link[1].address.stream,
+				t->link[2].address.port,
+				t->link[2].address.stream,
+				t->link[3].address.port,
+				t->link[3].address.stream,
+				t->id,
+				t->groupID
+			);
+			break;
+		}
+
+		case kAGDCStreamAccessI2C: {
+			AGDCStreamAccessI2C_t *t = (AGDCStreamAccessI2C_t *)p;
+			ps = sizeof(*t);
+			bprintf(a, sizeof(a), " 0x%llx = { address(port:%d stream:0x%x) i2c(device:%d speed:%d status:%d %s:%s) }",
+				(uint64_t)t,
+				t->address.port,
+				t->address.stream,
+				t->i2c.device,
+				t->i2c.speed,
+				t->i2c.status,
+				isstart ? "write" : "read",
+				HEX(hex, sizeof(hex), isstart ? t->i2c.write.buffer : t->i2c.read.buffer, isstart ? t->i2c.write.length : t->i2c.read.length)
+			);
+			break;
+		}
+
+		case kAGDCStreamAccessI2CCapability: {
+			AGDCStreamAccessI2CCapability_t *t = (AGDCStreamAccessI2CCapability_t *)p;
+			ps = sizeof(*t);
+			bprintf(a, sizeof(a), " 0x%llx = { address(port:%d stream:0x%x) i2c(width:%d minSpeed:%d maxSpeed:%d burstSize:%d) }",
+				(uint64_t)t,
+				t->address.port,
+				t->address.stream,
+				t->i2c.width,
+				t->i2c.minSpeed,
+				t->i2c.maxSpeed,
+				t->i2c.burstSize
+			);
+			break;
+		}
+
+		case kAGDCStreamAccessAUX: {
+			AGDCStreamAccessAUX_t *t = (AGDCStreamAccessAUX_t *)p;
+			ps = sizeof(*t);
+			bprintf(a, sizeof(a), " 0x%llx = { address(port:%d stream:0x%x) AuxRegister:0x%x aux(status:%d data:%s)) }",
+				(uint64_t)t,
+				t->address.port,
+				t->address.stream,
+				t->AuxRegister,
+				t->aux.status,
+				HEX(hex, sizeof(hex), t->aux.data.b, t->aux.size)
+			);
+			break;
+		}
+
+		case kAGDCStreamGetEDID: {
+			AGDCStreamGetEDID_t *t = (AGDCStreamGetEDID_t *)p;
+			ps = sizeof(*t);
+			bprintf(a, sizeof(a), " 0x%llx = { address(port:%d stream:0x%x) block:%d status:0x%x data:%s }",
+				(uint64_t)t,
+				t->address.port,
+				t->address.stream,
+				t->block,
+				t->status,
+				HEX(hex, sizeof(hex), t->data, 128)
+			);
+			break;
+		}
+
+		case kAGDCStreamConfig: {
+			AGDCStreamConfig_t *t = (AGDCStreamConfig_t *)p;
+			ps = sizeof(*t);
+			CONVERT_AGDC_TO_OS_TIMING_DATA(&t->timing, &timing);
+			bprintf(a, sizeof(a), " 0x%llx = { id:%d address(port:%d stream:0x%x) offset(h:%d v:%d) timing( %s ) }",
+				(uint64_t)t,
+				t->id,
+				t->address.port,
+				t->address.stream,
+				t->horizontalOffset,
+				t->verticalOffset,
+				DumpOneDetailedTimingInformationPtr(timinginfo, sizeof(timinginfo), &timing, sizeof(timing))
+			);
+			break;
+		}
+
+		case kAGDCMultiLinkConfig: {
+			AGDCMultiLinkConfig_t *t = (AGDCMultiLinkConfig_t *)p;
+			ps = sizeof(*t);
+			CONVERT_AGDC_TO_OS_TIMING_DATA(&t->target.timing, &timing);
+			inc = bprintf(a, sizeof(a), " 0x%llx = { target(id:%d groupID:%d address(port:%d stream:0x%x) singleTiming:%d timing( %s )) valid:%d link(\n",
+				(uint64_t)t,
+				t->target.id,
+				t->target.groupID,
+				t->target.address.port,
+				t->target.address.stream,
+				t->target.singleTiming,
+				DumpOneDetailedTimingInformationPtr(timinginfo, sizeof(timinginfo), &timing, sizeof(timing)),
+				t->valid
+			);
+			for (int i=0;i<4;i++) {
+				CONVERT_AGDC_TO_OS_TIMING_DATA(&t->link[i].timing, &timing);
+				inc += bprintf(a+inc, sizeof(a)-inc, "    [%d]{ id:%d address(port:%d stream:0x%x) offset(h:%d v:%d) timing( %s ) }\n",
+					i,
+					t->link[i].id,
+					t->link[i].address.port,
+					t->link[i].address.stream,
+					t->link[i].horizontalOffset,
+					t->link[i].verticalOffset,
+					DumpOneDetailedTimingInformationPtr(timinginfo, sizeof(timinginfo), &timing, sizeof(timing))
+				);
+			}
+			inc += bprintf(a+inc, sizeof(a)-inc, ")");
+			break;
+		}
+
+		case kAGDCLinkConfig: {
+			AGDCLinkConfig_t *t = (AGDCLinkConfig_t *)p;
+			ps = sizeof(*t);
+			if (isstart) {
+				bprintf(a, sizeof(a), " 0x%llx = { id:%d }",
+					(uint64_t)t,
+					t->id
+				);
+			}
+			else {
+				CONVERT_AGDC_TO_OS_TIMING_DATA(&t->timing, &timing);
+				bprintf(a, sizeof(a), " 0x%llx = { groupID:%d address(port:%d stream:0x%x) flags(%s%s%s%s%s) state:%s timing( %s ) }",
+					(uint64_t)t,
+					t->groupID,
+					t->address.port,
+					t->address.stream,
+					t->flags & kAGDCLinkConfigFlag_Online       ? "kAGDCLinkConfigFlag_Online," : "",
+					t->flags & kAGDCLinkConfigFlag_MayGroup     ? "kAGDCLinkConfigFlag_MayGroup," : "",
+					t->flags & kAGDCLinkConfigFlag_IsFixed      ? "kAGDCLinkConfigFlag_IsFixed," : "",
+					t->flags & kAGDCLinkConfigFlag_IsAssociated ? "kAGDCLinkConfigFlag_IsAssociated," : "",
+					t->flags & kAGDCLinkConfigFlag_IsGrouped    ? "kAGDCLinkConfigFlag_IsGrouped," : "",
+					t->state == kAGDCStreamStateRelease ? "kAGDCStreamStateRelease" :
+					t->state == kAGDCStreamStateEnabled ? "kAGDCStreamStateEnabled" :
+					t->state == kAGDCStreamStateInvalid ? "kAGDCStreamStateInvalid" :
+					UNKNOWN_VALUE(unknownstr, sizeof(unknownstr), t->state),
+					DumpOneDetailedTimingInformationPtr(timinginfo, sizeof(timinginfo), &timing, sizeof(timing))
+				);
+			}
+			break;
+		}
+
+		case kAGDCStreamSetState: {
+			AGDCStreamSetState_t *t = (AGDCStreamSetState_t *)p;
+			ps = sizeof(*t);
+			bprintf(a, sizeof(a), " 0x%llx = { address(port:%d stream:0x%x) state:%s }",
+				(uint64_t)t,
+				t->address.port,
+				t->address.stream,
+				t->state == kAGDCStreamStateRelease ? "kAGDCStreamStateRelease" :
+				t->state == kAGDCStreamStateEnabled ? "kAGDCStreamStateEnabled" :
+				t->state == kAGDCStreamStateInvalid ? "kAGDCStreamStateInvalid" :
+				UNKNOWN_VALUE(unknownstr, sizeof(unknownstr), t->state)
+			);
+			break;
+		}
+
+		case kAGDCFBOnline: {
+			AGDCFBOnline_t *t = (AGDCFBOnline_t *)p;
+			ps = sizeof(*t);
+			bprintf(a, sizeof(a), " 0x%llx = { id:%d state:0x%x }",
+				(uint64_t)t,
+				t->id,
+				t->state
+			);
+			break;
+		}
+
+		case kAGDCFBSetMode: {
+			AGDCFBSetMode_t *t = (AGDCFBSetMode_t *)p;
+			ps = sizeof(*t);
+			bprintf(a, sizeof(a), " 0x%llx = { id:%d modeID:0x%x width:%d height:%d depth:%d reserved(%x,%x,%x,%x,%x,%x,%x) }",
+				(uint64_t)t,
+					t->id,
+					t->modeID,
+					t->width,
+					t->height,
+					t->depth,
+					t->reserved[0],
+					t->reserved[1],
+					t->reserved[2],
+					t->reserved[3],
+					t->reserved[4],
+					t->reserved[5],
+					t->reserved[6]
+			);
+			break;
+		}
+
+		case kAGDCFBInjectEvent: {
+			AGDCFBInjectEvent_t *t = (AGDCFBInjectEvent_t *)p;
+			ps = sizeof(*t);
+			bprintf(a, sizeof(a), " 0x%llx = { id:%d event:0x%x }",
+				(uint64_t)t,
+				t->id,
+				t->eventID
+			);
+			break;
+		}
+
+		case kAGDCFBDoControl: {
+			AGDCFBDoControl_t *t = (AGDCFBDoControl_t *)p;
+			ps = sizeof(*t);
+			bprintf(a, sizeof(a), " 0x%llx = { id:%d payload(0x%llx,0x%llx,0x%llx,0x%llx) }",
+				(uint64_t)t,
+				t->id,
+				t->payload[0],
+				t->payload[1],
+				t->payload[2],
+				t->payload[3]
+			);
+			break;
+		}
+
+		case kAGDCPMInfo: {
+			AGDCPMInfo_t *t = (AGDCPMInfo_t *)p;
+			ps = sizeof(*t);
+			bprintf(a, sizeof(a), " 0x%llx = { NumPStates:%d NumPowerLimits:%d ControlType:%d }",
+				(uint64_t)t,
+				t->NumPStates,
+				t->NumPowerLimits,
+				t->ControlType
+			);
+			break;
+		}
+
+		case kAGDCRegisterCallback: {
+			AGDCPMRegisterCallback_t *t = (AGDCPMRegisterCallback_t *)p;
+			ps = sizeof(*t);
+			bprintf(a, sizeof(a), " 0x%llx = { cookie:0x%llx handler:0x%llx }",
+				(uint64_t)t,
+				(uint64_t)t->cookie,
+				(uint64_t)t->handler
+			);
+			break;
+		}
+
+		default:
+			bprintf(a, sizeof(a), " 0x%llx = { unknown }",
+				(uint64_t)p
+			);
+	}
+#endif
+
+	inc = 0;
+	bool sizemismatchin = (psin && (structInSize != psin));
+	bool sizemismatchout = (psout && structOutSize && (*structOutSize != psout));
+
+	inc0 = inc;
+	if ((structIn && structInSize) || sizemismatchin) {
+		inc += bprintf(b+inc, sizeof(b)-inc, "%sIn(", inc>inc0?" ":"");
+		inc1 = inc;
+		if (structIn) inc += bprintf(b+inc, sizeof(b)-inc, "%s0x%lx", inc>inc1?" ":"", *structIn);
+		if (structInSize) inc += bprintf(b+inc, sizeof(b)-inc, "%sSz:%lu", inc>inc1?" ":"", structInSize);
+		if (sizemismatchin) inc += bprintf(b+inc, sizeof(b)-inc, "%sexpected:%d", inc>inc1?" ":"", psin);
+		inc += bprintf(b+inc, sizeof(b)-inc, ")");
+	}
+	if ((structOut && structOutSize && *structOutSize) || sizemismatchout) {
+		inc += bprintf(b+inc, sizeof(b)-inc, "%sOut(", inc>inc0?" ":"");
+		inc1 = inc;
+		if (structOut) inc += bprintf(b+inc, sizeof(b)-inc, "%s0x%lx", inc>inc1?" ":"", *structOut);
+		if (structOutSize && *structOutSize) inc += bprintf(b+inc, sizeof(b)-inc, "%sSz:%lu", inc>inc1?" ":"", *structOutSize);
+		if (sizemismatchout) inc += bprintf(b+inc, sizeof(b)-inc, "%sexpected:%d", inc>inc1?" ":"", psout);
+		inc += bprintf(b+inc, sizeof(b)-inc, ")");
+	}
+
+	DBGLOG("agdc", "%s vendor_doDeviceAttribute%s agdc:%d attribute:0x%x%s%s (%s)%s%s%s",
+		isstart ? "[" : "]",
+		istwo ? "2" : " ",
+		agdcVars->index,
+		attribute, attributeStr ? "=" : "", attributeStr ? attributeStr : "",
+		b,
+		s,
+		a,
+		isstart ? "" : DumpOneReturn(resultStr, sizeof(resultStr), result)
+	);
+}
+
+IOReturn IOFB::wrapvendor_doDeviceAttribute( IOService *fbclient, uint32_t attribute, unsigned long* structIn, unsigned long structInSize, unsigned long* structOut, unsigned long* structOutSize, IOExternalMethodArguments* externalMethodArguments )
+{
+	AGDCVars *agdcVars = callbackIOFB->getAGDCVars(fbclient);
+	Dump_doDeviceAttribute                             ( 0, true, false, agdcVars, attribute, structIn, structInSize, structOut, structOutSize, (void*)externalMethodArguments);
+	IOReturn result = agdcVars->agdcvtable->orgvendor_doDeviceAttribute( fbclient, attribute, structIn, structInSize, structOut, structOutSize, externalMethodArguments );
+	Dump_doDeviceAttribute                       ( result, false, false, agdcVars, attribute, structIn, structInSize, structOut, structOutSize, (void*)externalMethodArguments);
+	return result;
+}
+
+IOReturn IOFB::wrapvendor_doDeviceAttribute2( IOService *fbclient, uint32_t attribute, unsigned long* structIn, unsigned long structInSize, unsigned long* structOut, unsigned long* structOutSize, AGDCClientState_t *agdcClientState )
+{
+	// exists in AppleGraphicsDeviceControl.
+	// may call vendor_doDeviceAttribute which is a pure virtual function in AppleGraphicsDeviceControl.
+
+	AGDCVars *agdcVars = callbackIOFB->getAGDCVars(fbclient);
+	Dump_doDeviceAttribute                               ( 0, true, true, agdcVars, attribute, structIn, structInSize, structOut, structOutSize, (void*)agdcClientState );
+	IOReturn result = agdcVars->agdcvtable->orgvendor_doDeviceAttribute2( fbclient, attribute, structIn, structInSize, structOut, structOutSize, agdcClientState );
+	Dump_doDeviceAttribute                         ( result, false, true, agdcVars, attribute, structIn, structInSize, structOut, structOutSize, (void*)agdcClientState );
+	return result;
+}

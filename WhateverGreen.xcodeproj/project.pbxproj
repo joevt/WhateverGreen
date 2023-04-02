@@ -15,6 +15,7 @@
 		6311E6F7285EF50A007B8263 /* kern_dpd.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 6311E6F5285EF50A007B8263 /* kern_dpd.hpp */; };
 		6317985C2814D23B0001CBE1 /* kern_iofbdebug.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6317985A2814D23B0001CBE1 /* kern_iofbdebug.cpp */; };
 		6317985D2814D23B0001CBE1 /* kern_iofbdebug.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 6317985B2814D23B0001CBE1 /* kern_iofbdebug.hpp */; };
+		6325F71F288F236100FD875B /* AppleGraphicsDeviceControl_vtable.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 6325F71E288F235300FD875B /* AppleGraphicsDeviceControl_vtable.hpp */; };
 		6380E31F2887F76F00BAF9C1 /* kern_nvmtl.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 6380E31D2887F76F00BAF9C1 /* kern_nvmtl.hpp */; };
 		6380E3202887F76F00BAF9C1 /* kern_nvmtl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6380E31E2887F76F00BAF9C1 /* kern_nvmtl.cpp */; };
 		CE1970FF21C380DF00B02AB4 /* kern_nvhda.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CE1970FD21C380DF00B02AB4 /* kern_nvhda.cpp */; };
@@ -104,6 +105,7 @@
 		6317985A2814D23B0001CBE1 /* kern_iofbdebug.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = kern_iofbdebug.cpp; sourceTree = "<group>"; };
 		6317985B2814D23B0001CBE1 /* kern_iofbdebug.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = kern_iofbdebug.hpp; sourceTree = "<group>"; };
 		6317985E28153C410001CBE1 /* IOFramebuffer_vtable.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = IOFramebuffer_vtable.hpp; sourceTree = "<group>"; };
+		6325F71E288F235300FD875B /* AppleGraphicsDeviceControl_vtable.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = AppleGraphicsDeviceControl_vtable.hpp; sourceTree = "<group>"; };
 		6380E31D2887F76F00BAF9C1 /* kern_nvmtl.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = kern_nvmtl.hpp; sourceTree = "<group>"; };
 		6380E31E2887F76F00BAF9C1 /* kern_nvmtl.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = kern_nvmtl.cpp; sourceTree = "<group>"; };
 		CE1970FD21C380DF00B02AB4 /* kern_nvhda.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = kern_nvhda.cpp; sourceTree = "<group>"; };
@@ -260,6 +262,7 @@
 				1C748C2E1C21952C0024EED2 /* Info.plist */,
 				6317985A2814D23B0001CBE1 /* kern_iofbdebug.cpp */,
 				6317985B2814D23B0001CBE1 /* kern_iofbdebug.hpp */,
+				6325F71E288F235300FD875B /* AppleGraphicsDeviceControl_vtable.hpp */,
 				6317985E28153C410001CBE1 /* IOFramebuffer_vtable.hpp */,
 			);
 			path = WhateverGreen;
@@ -366,6 +369,7 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6325F71F288F236100FD875B /* AppleGraphicsDeviceControl_vtable.hpp in Headers */,
 				CEA03B5F20EE825A00BA842F /* kern_weg.hpp in Headers */,
 				E2BE6CE220FB209400ED2D55 /* kern_fb.hpp in Headers */,
 				D531F20E26BF52CA00224998 /* kern_igfx_backlight.hpp in Headers */,

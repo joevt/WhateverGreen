@@ -11,10 +11,13 @@
 
 #include <Headers/kern_iokit.hpp>
 #include <IOKit/ndrvsupport/IONDRVFramebuffer.h>
+#include "kern_agdc.hpp"
+
 char * DumpOneDetailedTimingInformationPtr(char * buf, size_t bufSize, const void * IOFBDetailedTiming, size_t timingSize);
 char * DumpOneReturn(char * buf, size_t bufSize, IOReturn val);
 UInt32 IOFBAttribChars(UInt32 attribute);
 const char * IOFBGetAttributeName(UInt32 attribute, bool forConnection);
+const char * AGDCGetAttributeName(UInt32 attribute);
 
 
 class IOFB {
@@ -76,6 +79,37 @@ private:
 
 
 	/**
+	 *  AppleGraphicsDeviceControl vtable
+	 */
+	#define onevtableitem(_patch, _index, _result, _name, _params) using t_ ## _name = _result (*) _params;
+	#include "AppleGraphicsDeviceControl_vtable.hpp"
+
+	class AGDCvtable {
+		public:
+			uintptr_t vtable = 0;
+			#define onevtableitem(_patch, _index, _result, _name, _params) t_ ## _name org ## _name { nullptr };
+			#include "AppleGraphicsDeviceControl_vtable.hpp"
+	};
+	typedef AGDCvtable* AGDCvtablePtr;
+	AGDCvtablePtr *agdcvtables;
+	SInt32 agdcvtablesCount = 0;
+	SInt32 agdcvtablesMaxCount = 0;
+
+	static AGDCvtable *getAGDCvtable(IOService *service);
+
+	struct AppleGraphicsDeviceControl_vtableIndex { enum : size_t {
+		#define onevtableitem(_patch, _index, _result, _name, _params) _name _index ,
+		#include "AppleGraphicsDeviceControl_vtable.hpp"
+	}; };
+
+	#define onevtableitem(_patch, _index, _result, _name, _params) static _result wrap ## _name _params;
+	#include "AppleGraphicsDeviceControl_vtable.hpp"
+
+	mach_vm_address_t orgAppleGraphicsDeviceControlstart {};
+	static void wrapAppleGraphicsDeviceControlstart(IOService* agdc);
+
+
+	/**
 	 *  IOFB settings per IOFramebuffer service
 	 */
 	class IOFBVars {
@@ -118,9 +152,25 @@ private:
 
 
 	/**
+	 *  AGDC settings per AppleGraphicsDeviceControl service
+	 */
+	class AGDCVars {
+		public:
+			IOService *agdc = NULL; // AppleGraphicsDeviceControl*
+			AGDCvtable *agdcvtable = NULL;
+			int index = 0;
+	};
+	typedef AGDCVars* AGDCVarsPtr;
+	AGDCVarsPtr *agdcvars;
+	SInt32 agdcvarsCount = 0;
+	SInt32 agdcvarsMaxCount = 0;
+
+	static AGDCVars *getAGDCVars(IOService *service);
+
+
+	/**
 	 *  Private self instance for callbacks
 	 */
-	bool disableIOFB = false;
 	static IOFB *callbackIOFB;
 
 	/**
@@ -132,6 +182,7 @@ private:
 	/**
 	 *  Miscellaneous functions
 	 */
+	static void Dump_doDeviceAttribute( IOReturn result, bool isstart, bool istwo, IOFB::AGDCVars *agdcVars, uint32_t attribute, unsigned long* structIn, unsigned long structInSize, unsigned long* structOut, unsigned long* structOutSize, void* es );
 	static char * DumpOneDisplayParameters(char * buf, size_t bufSize, uintptr_t * value, uintptr_t numParameters);
 	void UpdateAttribute( IOFramebuffer *service, bool set, IOIndex connectIndex, IOSelect attribute, IOReturn result, uintptr_t * value, unsigned int size);
 };
