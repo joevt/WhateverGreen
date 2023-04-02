@@ -279,7 +279,7 @@ bool IOFB::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t a
 }
 
 
-IOFB::IOFBvtable *IOFB::getIOFBvtable(IORegistryEntry *service) {
+IOFB::IOFBvtable *IOFB::getIOFBvtable(IOFramebuffer *service) {
 	uintptr_t vtable = (UInt64)reinterpret_cast<uintptr_t **>(service)[0];
 
 	for (int i = 0; i < callbackIOFB->iofbvtablesCount; i++) {
@@ -320,7 +320,7 @@ IOFB::IOFBvtable *IOFB::getIOFBvtable(IORegistryEntry *service) {
 }
 
 
-IOFB::IOFBVars *IOFB::getIOFBVars(IORegistryEntry *service) {
+IOFB::IOFBVars *IOFB::getIOFBVars(IOFramebuffer *service) {
 	for (int i = 0; i < callbackIOFB->iofbvarsCount; i++) {
 		if (callbackIOFB->iofbvars[i] && callbackIOFB->iofbvars[i]->fb == service) {
 			return callbackIOFB->iofbvars[i];
@@ -439,7 +439,7 @@ typedef struct Attribute {
 	UInt64    value;
 } Attribute;
 
-void IOFB::UpdateAttribute( IORegistryEntry *service, bool set, IOIndex connectIndex, IOSelect attribute, IOReturn result, uintptr_t * value, unsigned int size)
+void IOFB::UpdateAttribute( IOFramebuffer *service, bool set, IOIndex connectIndex, IOSelect attribute, IOReturn result, uintptr_t * value, unsigned int size)
 {
 	Attribute newatr = { set, value != NULL, connectIndex, attribute, result };
 	OSArray *array = OSDynamicCast(OSArray, service->getProperty(kIOFBAttributesKey));
@@ -1633,7 +1633,7 @@ static char * DumpOneI2CReserved(char * buf, size_t bufSize, IOI2CRequest * requ
 //========================================================================================
 // Wrapped functions
 
-void IOFB::wraphideCursor( IORegistryEntry *service )
+void IOFB::wraphideCursor( IOFramebuffer *service )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	DBGLOG("iofb", "[ hideCursor fb:0x%llx", (UInt64)service);
@@ -1641,7 +1641,7 @@ void IOFB::wraphideCursor( IORegistryEntry *service )
 	DBGLOG("iofb", "] hideCursor");
 }
 
-void IOFB::wrapshowCursor( IORegistryEntry *service, IOGPoint * cursorLoc, int frame )
+void IOFB::wrapshowCursor( IOFramebuffer *service, IOGPoint * cursorLoc, int frame )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	DBGLOG("iofb", "[ showCursor fb:0x%llx", (UInt64)service);
@@ -1649,7 +1649,7 @@ void IOFB::wrapshowCursor( IORegistryEntry *service, IOGPoint * cursorLoc, int f
 	DBGLOG("iofb", "] showCursor");
 }
 
-void IOFB::wrapmoveCursor( IORegistryEntry *service, IOGPoint * cursorLoc, int frame )
+void IOFB::wrapmoveCursor( IOFramebuffer *service, IOGPoint * cursorLoc, int frame )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	DBGLOG("iofb", "[ moveCursor fb:0x%llx", (UInt64)service);
@@ -1657,7 +1657,7 @@ void IOFB::wrapmoveCursor( IORegistryEntry *service, IOGPoint * cursorLoc, int f
 	DBGLOG("iofb", "] moveCursor");
 }
 
-void IOFB::wrapgetVBLTime( IORegistryEntry *service, AbsoluteTime * time, AbsoluteTime * delta )
+void IOFB::wrapgetVBLTime( IOFramebuffer *service, AbsoluteTime * time, AbsoluteTime * delta )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	DBGLOG("iofb", "[ getVBLTime fb:0x%llx", (UInt64)service);
@@ -1665,7 +1665,7 @@ void IOFB::wrapgetVBLTime( IORegistryEntry *service, AbsoluteTime * time, Absolu
 	DBGLOG("iofb", "] getVBLTime");
 }
 
-void IOFB::wrapgetBoundingRect( IORegistryEntry *service, IOGBounds ** bounds )
+void IOFB::wrapgetBoundingRect( IOFramebuffer *service, IOGBounds ** bounds )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	DBGLOG("iofb", "[ getBoundingRect fb:0x%llx", (UInt64)service);
@@ -1681,7 +1681,7 @@ void IOFB::wrapgetBoundingRect( IORegistryEntry *service, IOGBounds ** bounds )
 UInt8 whole[300];
 int wholelen = 0;
 
-IOReturn IOFB::wrapdoI2CRequest( IORegistryEntry *service, UInt32 bus, struct IOI2CBusTiming * timing, struct IOI2CRequest * request )
+IOReturn IOFB::wrapdoI2CRequest( IOFramebuffer *service, UInt32 bus, struct IOI2CBusTiming * timing, struct IOI2CRequest * request )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	IOReturn result = kIOReturnSuccess;
@@ -1903,7 +1903,7 @@ IOReturn IOFB::wrapdoI2CRequest( IORegistryEntry *service, UInt32 bus, struct IO
 	return result;
 }
 
-IOReturn IOFB::wrapdiagnoseReport( IORegistryEntry *service, void * param1, void * param2, void * param3, void * param4 )
+IOReturn IOFB::wrapdiagnoseReport( IOFramebuffer *service, void * param1, void * param2, void * param3, void * param4 )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	DBGLOG("iofb", "[ diagnoseReport fb:0x%llx", (UInt64)service);
@@ -1912,7 +1912,7 @@ IOReturn IOFB::wrapdiagnoseReport( IORegistryEntry *service, void * param1, void
 	return result;
 }
 
-IOReturn IOFB::wrapsetGammaTable( IORegistryEntry *service, UInt32 channelCount, UInt32 dataCount, UInt32 dataWidth, void * data, bool syncToVBL )
+IOReturn IOFB::wrapsetGammaTable( IOFramebuffer *service, UInt32 channelCount, UInt32 dataCount, UInt32 dataWidth, void * data, bool syncToVBL )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	DBGLOG("iofb", "[ setGammaTable fb:0x%llx channelCount:%d dataCount:%d dataWidth:%d syncToVBL:%d", (UInt64)service, channelCount, dataCount, dataWidth, syncToVBL );
@@ -1921,7 +1921,7 @@ IOReturn IOFB::wrapsetGammaTable( IORegistryEntry *service, UInt32 channelCount,
 	return result;
 }
 
-IOReturn IOFB::wrapopen( IORegistryEntry *service )
+IOReturn IOFB::wrapopen( IOFramebuffer *service )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	DBGLOG("iofb", "[ open fb:0x%llx", (UInt64)service);
@@ -1930,7 +1930,7 @@ IOReturn IOFB::wrapopen( IORegistryEntry *service )
 	return result;
 }
 
-void IOFB::wrapclose( IORegistryEntry *service )
+void IOFB::wrapclose( IOFramebuffer *service )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	DBGLOG("iofb", "[ close fb:0x%llx", (UInt64)service);
@@ -1938,7 +1938,7 @@ void IOFB::wrapclose( IORegistryEntry *service )
 	DBGLOG("iofb", "] close");
 }
 
-bool IOFB::wrapisConsoleDevice( IORegistryEntry *service )
+bool IOFB::wrapisConsoleDevice( IOFramebuffer *service )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	DBGLOG("iofb", "[ isConsoleDevice fb:0x%llx", (UInt64)service);
@@ -1947,7 +1947,7 @@ bool IOFB::wrapisConsoleDevice( IORegistryEntry *service )
 	return result;
 }
 
-IOReturn IOFB::wrapsetupForCurrentConfig( IORegistryEntry *service )
+IOReturn IOFB::wrapsetupForCurrentConfig( IOFramebuffer *service )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	#ifdef DEBUG
@@ -1959,7 +1959,7 @@ IOReturn IOFB::wrapsetupForCurrentConfig( IORegistryEntry *service )
 	return result;
 }
 
-bool IOFB::wrapserializeInfo( IORegistryEntry *service, OSSerialize * s )
+bool IOFB::wrapserializeInfo( IOFramebuffer *service, OSSerialize * s )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	DBGLOG("iofb", "[ serializeInfo fb:0x%llx", (UInt64)service);
@@ -1968,7 +1968,7 @@ bool IOFB::wrapserializeInfo( IORegistryEntry *service, OSSerialize * s )
 	return result;
 }
 
-bool IOFB::wrapsetNumber( IORegistryEntry *service, OSDictionary * dict, const char * key, UInt32 number )
+bool IOFB::wrapsetNumber( IOFramebuffer *service, OSDictionary * dict, const char * key, UInt32 number )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	bool result = iofbVars->iofbvtable->orgsetNumber( service, dict, key, number );
@@ -1976,7 +1976,7 @@ bool IOFB::wrapsetNumber( IORegistryEntry *service, OSDictionary * dict, const c
 	return result;
 }
 
-IODeviceMemory * IOFB::wrapgetApertureRange( IORegistryEntry *service, IOPixelAperture aperture )
+IODeviceMemory * IOFB::wrapgetApertureRange( IOFramebuffer *service, IOPixelAperture aperture )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	IODeviceMemory * result = iofbVars->iofbvtable->orggetApertureRange( service, aperture );
@@ -1984,7 +1984,7 @@ IODeviceMemory * IOFB::wrapgetApertureRange( IORegistryEntry *service, IOPixelAp
 	return result;
 }
 
-IODeviceMemory * IOFB::wrapgetVRAMRange( IORegistryEntry *service )
+IODeviceMemory * IOFB::wrapgetVRAMRange( IOFramebuffer *service )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	IODeviceMemory * result = iofbVars->iofbvtable->orggetVRAMRange( service );
@@ -1992,7 +1992,7 @@ IODeviceMemory * IOFB::wrapgetVRAMRange( IORegistryEntry *service )
 	return result;
 }
 
-IOReturn IOFB::wrapenableController( IORegistryEntry *service )
+IOReturn IOFB::wrapenableController( IOFramebuffer *service )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	#ifdef DEBUG
@@ -2004,7 +2004,7 @@ IOReturn IOFB::wrapenableController( IORegistryEntry *service )
 	return result;
 }
 
-const char * IOFB::wrapgetPixelFormats( IORegistryEntry *service )
+const char * IOFB::wrapgetPixelFormats( IOFramebuffer *service )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	DBGLOG("iofb", "[ getPixelFormats fb:0x%llx", (UInt64)service);
@@ -2016,7 +2016,7 @@ const char * IOFB::wrapgetPixelFormats( IORegistryEntry *service )
 	return result;
 }
 
-IOItemCount IOFB::wrapgetDisplayModeCount( IORegistryEntry *service )
+IOItemCount IOFB::wrapgetDisplayModeCount( IOFramebuffer *service )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	IOItemCount result = iofbVars->iofbvtable->orggetDisplayModeCount( service );
@@ -2024,7 +2024,7 @@ IOItemCount IOFB::wrapgetDisplayModeCount( IORegistryEntry *service )
 	return result;
 }
 
-IOReturn IOFB::wrapgetDisplayModes( IORegistryEntry *service, IODisplayModeID * allDisplayModes )
+IOReturn IOFB::wrapgetDisplayModes( IOFramebuffer *service, IODisplayModeID * allDisplayModes )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	DBGLOG("iofb", "[ getDisplayModes fb:0x%llx", (UInt64)service);
@@ -2040,7 +2040,7 @@ IOReturn IOFB::wrapgetDisplayModes( IORegistryEntry *service, IODisplayModeID * 
 	return result;
 }
 
-IOReturn IOFB::wrapgetInformationForDisplayMode( IORegistryEntry *service, IODisplayModeID displayMode, IODisplayModeInformation * info )
+IOReturn IOFB::wrapgetInformationForDisplayMode( IOFramebuffer *service, IODisplayModeID displayMode, IODisplayModeInformation * info )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	IOReturn result = iofbVars->iofbvtable->orggetInformationForDisplayMode( service, displayMode, info );
@@ -2056,7 +2056,7 @@ IOReturn IOFB::wrapgetInformationForDisplayMode( IORegistryEntry *service, IODis
 	return result;
 }
 
-UInt64 IOFB::wrapgetPixelFormatsForDisplayMode( IORegistryEntry *service, IODisplayModeID displayMode, IOIndex depth )
+UInt64 IOFB::wrapgetPixelFormatsForDisplayMode( IOFramebuffer *service, IODisplayModeID displayMode, IOIndex depth )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	UInt64 result = iofbVars->iofbvtable->orggetPixelFormatsForDisplayMode( service, displayMode, depth );
@@ -2064,7 +2064,7 @@ UInt64 IOFB::wrapgetPixelFormatsForDisplayMode( IORegistryEntry *service, IODisp
 	return result;
 }
 
-IOReturn IOFB::wrapgetPixelInformation( IORegistryEntry *service, IODisplayModeID displayMode, IOIndex depth, IOPixelAperture aperture, IOPixelInformation * pixelInfo )
+IOReturn IOFB::wrapgetPixelInformation( IOFramebuffer *service, IODisplayModeID displayMode, IOIndex depth, IOPixelAperture aperture, IOPixelInformation * pixelInfo )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	IOReturn result = iofbVars->iofbvtable->orggetPixelInformation( service, displayMode, depth, aperture, pixelInfo );
@@ -2158,7 +2158,7 @@ IOReturn IOFB::wrapgetPixelInformation( IORegistryEntry *service, IODisplayModeI
 	return newresult;
 }
 
-IOReturn IOFB::wrapgetCurrentDisplayMode( IORegistryEntry *service, IODisplayModeID * displayMode, IOIndex * depth )
+IOReturn IOFB::wrapgetCurrentDisplayMode( IOFramebuffer *service, IODisplayModeID * displayMode, IOIndex * depth )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	IOReturn result = iofbVars->iofbvtable->orggetCurrentDisplayMode( service, displayMode, depth );
@@ -2169,7 +2169,7 @@ IOReturn IOFB::wrapgetCurrentDisplayMode( IORegistryEntry *service, IODisplayMod
 	return result;
 }
 
-IOReturn IOFB::wrapsetDisplayMode( IORegistryEntry *service, IODisplayModeID displayMode, IOIndex depth )
+IOReturn IOFB::wrapsetDisplayMode( IOFramebuffer *service, IODisplayModeID displayMode, IOIndex depth )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	IOReturn result = iofbVars->iofbvtable->orgsetDisplayMode( service, displayMode, depth );
@@ -2180,7 +2180,7 @@ IOReturn IOFB::wrapsetDisplayMode( IORegistryEntry *service, IODisplayModeID dis
 	return result;
 }
 
-IOReturn IOFB::wrapsetApertureEnable( IORegistryEntry *service, IOPixelAperture aperture, IOOptionBits enable )
+IOReturn IOFB::wrapsetApertureEnable( IOFramebuffer *service, IOPixelAperture aperture, IOOptionBits enable )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	DBGLOG("iofb", "[ setApertureEnable fb:0x%llx aperture:%d enable:%d", (UInt64)service, aperture, enable);
@@ -2192,7 +2192,7 @@ IOReturn IOFB::wrapsetApertureEnable( IORegistryEntry *service, IOPixelAperture 
 	return result;
 }
 
-IOReturn IOFB::wrapsetStartupDisplayMode( IORegistryEntry *service, IODisplayModeID displayMode, IOIndex depth )
+IOReturn IOFB::wrapsetStartupDisplayMode( IOFramebuffer *service, IODisplayModeID displayMode, IOIndex depth )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	IOReturn result = iofbVars->iofbvtable->orgsetStartupDisplayMode( service, displayMode, depth );
@@ -2206,7 +2206,7 @@ IOReturn IOFB::wrapsetStartupDisplayMode( IORegistryEntry *service, IODisplayMod
 	return result;
 }
 
-IOReturn IOFB::wrapgetStartupDisplayMode( IORegistryEntry *service, IODisplayModeID * displayMode, IOIndex * depth )
+IOReturn IOFB::wrapgetStartupDisplayMode( IOFramebuffer *service, IODisplayModeID * displayMode, IOIndex * depth )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	DBGLOG("iofb", "[ getStartupDisplayMode fb:0x%llx", (UInt64)service);
@@ -2218,7 +2218,7 @@ IOReturn IOFB::wrapgetStartupDisplayMode( IORegistryEntry *service, IODisplayMod
 	return result;
 }
 
-IOReturn IOFB::wrapsetCLUTWithEntries( IORegistryEntry *service, IOColorEntry * colors, UInt32 index, UInt32 numEntries, IOOptionBits options )
+IOReturn IOFB::wrapsetCLUTWithEntries( IOFramebuffer *service, IOColorEntry * colors, UInt32 index, UInt32 numEntries, IOOptionBits options )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	DBGLOG("iofb", "[ setCLUTWithEntries fb:0x%llx index:%d entries:%d options:%x", (UInt64)service, index, numEntries, options);
@@ -2230,7 +2230,7 @@ IOReturn IOFB::wrapsetCLUTWithEntries( IORegistryEntry *service, IOColorEntry * 
 	return result;
 }
 
-IOReturn IOFB::wrapsetGammaTable2( IORegistryEntry *service, UInt32 channelCount, UInt32 dataCount, UInt32 dataWidth, void * data )
+IOReturn IOFB::wrapsetGammaTable2( IOFramebuffer *service, UInt32 channelCount, UInt32 dataCount, UInt32 dataWidth, void * data )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	DBGLOG("iofb", "[ setGammaTable2 fb:0x%llx channelCount:%d dataCount:%d dataWidth:%d", (UInt64)service, channelCount, dataCount, dataWidth);
@@ -2242,7 +2242,7 @@ IOReturn IOFB::wrapsetGammaTable2( IORegistryEntry *service, UInt32 channelCount
 	return result;
 }
 
-IOReturn IOFB::wrapsetAttribute( IORegistryEntry *service, IOSelect attribute, uintptr_t value )
+IOReturn IOFB::wrapsetAttribute( IOFramebuffer *service, IOSelect attribute, uintptr_t value )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	#ifdef DEBUG
@@ -2262,7 +2262,7 @@ IOReturn IOFB::wrapsetAttribute( IORegistryEntry *service, IOSelect attribute, u
 	return result;
 }
 
-IOReturn IOFB::wrapgetAttribute( IORegistryEntry *service, IOSelect attribute, uintptr_t * value )
+IOReturn IOFB::wrapgetAttribute( IOFramebuffer *service, IOSelect attribute, uintptr_t * value )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	#ifdef DEBUG
@@ -2282,7 +2282,7 @@ IOReturn IOFB::wrapgetAttribute( IORegistryEntry *service, IOSelect attribute, u
 	return result;
 }
 
-IOReturn IOFB::wrapgetTimingInfoForDisplayMode( IORegistryEntry *service, IODisplayModeID displayMode, IOTimingInformation * info )
+IOReturn IOFB::wrapgetTimingInfoForDisplayMode( IOFramebuffer *service, IODisplayModeID displayMode, IOTimingInformation * info )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	IOReturn result = iofbVars->iofbvtable->orggetTimingInfoForDisplayMode( service, displayMode, info );
@@ -2308,7 +2308,7 @@ IOReturn IOFB::wrapgetTimingInfoForDisplayMode( IORegistryEntry *service, IODisp
 
 #define kIOFBInvalidModesKey "IOFBInvalidModes"
 
-IOReturn IOFB::wrapvalidateDetailedTiming( IORegistryEntry *service, void * description, IOByteCount descripSize )
+IOReturn IOFB::wrapvalidateDetailedTiming( IOFramebuffer *service, void * description, IOByteCount descripSize )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	IOReturn result = iofbVars->iofbvtable->orgvalidateDetailedTiming( service, description, descripSize );
@@ -2387,7 +2387,7 @@ IOReturn IOFB::wrapvalidateDetailedTiming( IORegistryEntry *service, void * desc
 	return newresult;
 }
 
-IOReturn IOFB::wrapsetDetailedTimings( IORegistryEntry *service, OSArray * array )
+IOReturn IOFB::wrapsetDetailedTimings( IOFramebuffer *service, OSArray * array )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	DBGLOG("iofb", "[ setDetailedTimings fb:0x%llx array:0x%llx count:%u", (UInt64)service, (UInt64)array, array ? array->getCount() : 0);
@@ -2419,7 +2419,7 @@ IOReturn IOFB::wrapsetDetailedTimings( IORegistryEntry *service, OSArray * array
 	return result;
 }
 
-IOItemCount IOFB::wrapgetConnectionCount( IORegistryEntry *service )
+IOItemCount IOFB::wrapgetConnectionCount( IOFramebuffer *service )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	IOItemCount result = iofbVars->iofbvtable->orggetConnectionCount( service );
@@ -2427,7 +2427,7 @@ IOItemCount IOFB::wrapgetConnectionCount( IORegistryEntry *service )
 	return result;
 }
 
-IOReturn IOFB::wrapsetAttributeForConnection( IORegistryEntry *service, IOIndex connectIndex, IOSelect attribute, uintptr_t value )
+IOReturn IOFB::wrapsetAttributeForConnection( IOFramebuffer *service, IOIndex connectIndex, IOSelect attribute, uintptr_t value )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	#ifdef DEBUG
@@ -2457,7 +2457,7 @@ IOReturn IOFB::wrapsetAttributeForConnection( IORegistryEntry *service, IOIndex 
 	return result;
 }
 
-IOReturn IOFB::wrapgetAttributeForConnection( IORegistryEntry *service, IOIndex connectIndex, IOSelect attribute, uintptr_t * value )
+IOReturn IOFB::wrapgetAttributeForConnection( IOFramebuffer *service, IOIndex connectIndex, IOSelect attribute, uintptr_t * value )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	IOReturn result = iofbVars->iofbvtable->orggetAttributeForConnection( service, connectIndex, attribute, value );
@@ -2527,7 +2527,7 @@ IOReturn IOFB::wrapgetAttributeForConnection( IORegistryEntry *service, IOIndex 
 	return result;
 }
 
-bool IOFB::wrapconvertCursorImage( IORegistryEntry *service, void * cursorImage, IOHardwareCursorDescriptor * description, IOHardwareCursorInfo * cursor )
+bool IOFB::wrapconvertCursorImage( IOFramebuffer *service, void * cursorImage, IOHardwareCursorDescriptor * description, IOHardwareCursorInfo * cursor )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	DBGLOG("iofb", "[ convertCursorImage fb:0x%llx", (UInt64)service);
@@ -2536,7 +2536,7 @@ bool IOFB::wrapconvertCursorImage( IORegistryEntry *service, void * cursorImage,
 	return result;
 }
 
-IOReturn IOFB::wrapsetCursorImage( IORegistryEntry *service, void * cursorImage )
+IOReturn IOFB::wrapsetCursorImage( IOFramebuffer *service, void * cursorImage )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	DBGLOG("iofb", "[ setCursorImage fb:0x%llx", (UInt64)service);
@@ -2548,7 +2548,7 @@ IOReturn IOFB::wrapsetCursorImage( IORegistryEntry *service, void * cursorImage 
 	return result;
 }
 
-IOReturn IOFB::wrapsetCursorState( IORegistryEntry *service, SInt32 x, SInt32 y, bool visible )
+IOReturn IOFB::wrapsetCursorState( IOFramebuffer *service, SInt32 x, SInt32 y, bool visible )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	DBGLOG("iofb", "[ setCursorState fb:0x%llx %d,%d visible:%d", (UInt64)service, x, y, visible);
@@ -2560,7 +2560,7 @@ IOReturn IOFB::wrapsetCursorState( IORegistryEntry *service, SInt32 x, SInt32 y,
 	return result;
 }
 
-void IOFB::wrapflushCursor( IORegistryEntry *service )
+void IOFB::wrapflushCursor( IOFramebuffer *service )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	DBGLOG("iofb", "[ flushCursor fb:0x%llx", (UInt64)service);
@@ -2568,7 +2568,7 @@ void IOFB::wrapflushCursor( IORegistryEntry *service )
 	DBGLOG("iofb", "] flushCursor");
 }
 
-IOReturn IOFB::wrapgetAppleSense( IORegistryEntry *service, IOIndex connectIndex, UInt32 * senseType, UInt32 * primary, UInt32 * extended, UInt32 * displayType )
+IOReturn IOFB::wrapgetAppleSense( IOFramebuffer *service, IOIndex connectIndex, UInt32 * senseType, UInt32 * primary, UInt32 * extended, UInt32 * displayType )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	IOReturn result = iofbVars->iofbvtable->orggetAppleSense( service, connectIndex, senseType, primary, extended, displayType );
@@ -2595,7 +2595,7 @@ IOReturn IOFB::wrapgetAppleSense( IORegistryEntry *service, IOIndex connectIndex
 	return result;
 }
 
-IOReturn IOFB::wrapconnectFlags( IORegistryEntry *service, IOIndex connectIndex, IODisplayModeID displayMode, IOOptionBits * flags )
+IOReturn IOFB::wrapconnectFlags( IOFramebuffer *service, IOIndex connectIndex, IODisplayModeID displayMode, IOOptionBits * flags )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	IOReturn result = iofbVars->iofbvtable->orgconnectFlags( service, connectIndex, displayMode, flags );
@@ -2611,7 +2611,7 @@ IOReturn IOFB::wrapconnectFlags( IORegistryEntry *service, IOIndex connectIndex,
 	return result;
 }
 
-void IOFB::wrapsetDDCClock( IORegistryEntry *service, IOIndex bus, UInt32 value )
+void IOFB::wrapsetDDCClock( IOFramebuffer *service, IOIndex bus, UInt32 value )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	DBGLOG("iofb", "[ setDDCClock fb:0x%llx bus:%d value:%d", (UInt64)service, bus, value);
@@ -2619,7 +2619,7 @@ void IOFB::wrapsetDDCClock( IORegistryEntry *service, IOIndex bus, UInt32 value 
 	DBGLOG("iofb", "] setDDCClock");
 }
 
-void IOFB::wrapsetDDCData( IORegistryEntry *service, IOIndex bus, UInt32 value )
+void IOFB::wrapsetDDCData( IOFramebuffer *service, IOIndex bus, UInt32 value )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	DBGLOG("iofb", "[ setDDCData fb:0x%llx bus:%d value:%d", (UInt64)service, bus, value);
@@ -2627,7 +2627,7 @@ void IOFB::wrapsetDDCData( IORegistryEntry *service, IOIndex bus, UInt32 value )
 	DBGLOG("iofb", "] setDDCData");
 }
 
-bool IOFB::wrapreadDDCClock( IORegistryEntry *service, IOIndex bus )
+bool IOFB::wrapreadDDCClock( IOFramebuffer *service, IOIndex bus )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	DBGLOG("iofb", "[ readDDCClock fb:0x%llx bus:%d", (UInt64)service, bus);
@@ -2636,7 +2636,7 @@ bool IOFB::wrapreadDDCClock( IORegistryEntry *service, IOIndex bus )
 	return result;
 }
 
-bool IOFB::wrapreadDDCData( IORegistryEntry *service, IOIndex bus )
+bool IOFB::wrapreadDDCData( IOFramebuffer *service, IOIndex bus )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	DBGLOG("iofb", "[ readDDCData fb:0x%llx bus:%d", (UInt64)service, bus);
@@ -2645,7 +2645,7 @@ bool IOFB::wrapreadDDCData( IORegistryEntry *service, IOIndex bus )
 	return result;
 }
 
-IOReturn IOFB::wrapenableDDCRaster( IORegistryEntry *service, bool enable )
+IOReturn IOFB::wrapenableDDCRaster( IOFramebuffer *service, bool enable )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	DBGLOG("iofb", "[ enableDDCRaster fb:0x%llx enable:%d", (UInt64)service, enable);
@@ -2657,7 +2657,7 @@ IOReturn IOFB::wrapenableDDCRaster( IORegistryEntry *service, bool enable )
 	return result;
 }
 
-bool IOFB::wraphasDDCConnect( IORegistryEntry *service, IOIndex connectIndex )
+bool IOFB::wraphasDDCConnect( IOFramebuffer *service, IOIndex connectIndex )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	bool result = iofbVars->iofbvtable->orghasDDCConnect( service, connectIndex );
@@ -2665,7 +2665,7 @@ bool IOFB::wraphasDDCConnect( IORegistryEntry *service, IOIndex connectIndex )
 	return result;
 }
 
-IOReturn IOFB::wrapgetDDCBlock( IORegistryEntry *service, IOIndex connectIndex, UInt32 blockNumber, IOSelect blockType, IOOptionBits options, UInt8 * data, IOByteCount * length )
+IOReturn IOFB::wrapgetDDCBlock( IOFramebuffer *service, IOIndex connectIndex, UInt32 blockNumber, IOSelect blockType, IOOptionBits options, UInt8 * data, IOByteCount * length )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	char hex[1000];
@@ -2704,7 +2704,7 @@ IOReturn IOFB::wrapgetDDCBlock( IORegistryEntry *service, IOIndex connectIndex, 
 	return result;
 }
 
-IOReturn IOFB::wrapregisterForInterruptType( IORegistryEntry *service, IOSelect interruptType, IOFBInterruptProc proc, OSObject * target, void * ref, void ** interruptRef )
+IOReturn IOFB::wrapregisterForInterruptType( IOFramebuffer *service, IOSelect interruptType, IOFBInterruptProc proc, OSObject * target, void * ref, void ** interruptRef )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	#ifdef DEBUG
@@ -2718,7 +2718,7 @@ IOReturn IOFB::wrapregisterForInterruptType( IORegistryEntry *service, IOSelect 
 	return result;
 }
 
-IOReturn IOFB::wrapunregisterInterrupt( IORegistryEntry *service, void * interruptRef )
+IOReturn IOFB::wrapunregisterInterrupt( IOFramebuffer *service, void * interruptRef )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	IOReturn result = iofbVars->iofbvtable->orgunregisterInterrupt( service, interruptRef );
@@ -2729,7 +2729,7 @@ IOReturn IOFB::wrapunregisterInterrupt( IORegistryEntry *service, void * interru
 	return result;
 }
 
-IOReturn IOFB::wrapsetInterruptState( IORegistryEntry *service, void * interruptRef, UInt32 state )
+IOReturn IOFB::wrapsetInterruptState( IOFramebuffer *service, void * interruptRef, UInt32 state )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	DBGLOG("iofb", "[ setInterruptState fb:0x%llx interruptRef:0x%llx state:%x", (UInt64)service, (UInt64)interruptRef, state);
@@ -2741,7 +2741,7 @@ IOReturn IOFB::wrapsetInterruptState( IORegistryEntry *service, void * interrupt
 	return result;
 }
 
-IOReturn IOFB::wrapgetNotificationSemaphore( IORegistryEntry *service, IOSelect interruptType, semaphore_t * semaphore )
+IOReturn IOFB::wrapgetNotificationSemaphore( IOFramebuffer *service, IOSelect interruptType, semaphore_t * semaphore )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	#ifdef DEBUG
@@ -2756,7 +2756,7 @@ IOReturn IOFB::wrapgetNotificationSemaphore( IORegistryEntry *service, IOSelect 
 	return result;
 }
 
-IOReturn IOFB::wrapdoDriverIO( IORegistryEntry *service, UInt32 commandID, void * contents, UInt32 commandCode, UInt32 commandKind )
+IOReturn IOFB::wrapdoDriverIO( IONDRVFramebuffer *service, UInt32 commandID, void * contents, UInt32 commandCode, UInt32 commandKind )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	DBGLOG("iofb", "[ doDriverIO fb:0x%llx commandID:%d commandCode:%d commandKind:%d", (UInt64)service, commandID, commandCode, commandKind);
@@ -2768,7 +2768,7 @@ IOReturn IOFB::wrapdoDriverIO( IORegistryEntry *service, UInt32 commandID, void 
 	return result;
 }
 
-IOReturn IOFB::wrapcheckDriver( IORegistryEntry *service )
+IOReturn IOFB::wrapcheckDriver( IONDRVFramebuffer *service )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	DBGLOG("iofb", "[ checkDriver fb:0x%llx", (UInt64)service);
@@ -2780,7 +2780,7 @@ DBGLOG("iofb", "] checkDriver%s", DumpOneReturn(resultStr, sizeof(resultStr), re
 	return result;
 }
 
-UInt32 IOFB::wrapiterateAllModes( IORegistryEntry *service, IODisplayModeID * displayModeIDs )
+UInt32 IOFB::wrapiterateAllModes( IONDRVFramebuffer *service, IODisplayModeID * displayModeIDs )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	DBGLOG("iofb", "[ iterateAllModes fb:0x%llx", (UInt64)service);
@@ -2789,7 +2789,7 @@ UInt32 IOFB::wrapiterateAllModes( IORegistryEntry *service, IODisplayModeID * di
 	return result;
 }
 
-IOReturn IOFB::wrapgetResInfoForMode( IORegistryEntry *service, IODisplayModeID modeID, IODisplayModeInformation * theInfo )
+IOReturn IOFB::wrapgetResInfoForMode( IONDRVFramebuffer *service, IODisplayModeID modeID, IODisplayModeInformation * theInfo )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	DBGLOG("iofb", "[ getResInfoForMode fb:0x%llx id:0x%08x", (UInt64)service, modeID);
@@ -2805,7 +2805,7 @@ IOReturn IOFB::wrapgetResInfoForMode( IORegistryEntry *service, IODisplayModeID 
 	return result;
 }
 
-IOReturn IOFB::wrapgetResInfoForArbMode( IORegistryEntry *service, IODisplayModeID modeID, IODisplayModeInformation * theInfo )
+IOReturn IOFB::wrapgetResInfoForArbMode( IONDRVFramebuffer *service, IODisplayModeID modeID, IODisplayModeInformation * theInfo )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	DBGLOG("iofb", "[ getResInfoForArbMode fb:0x%llx id:0x%08x", (UInt64)service, modeID);
@@ -2821,7 +2821,7 @@ IOReturn IOFB::wrapgetResInfoForArbMode( IORegistryEntry *service, IODisplayMode
 	return result;
 }
 
-IOReturn IOFB::wrapvalidateDisplayMode( IORegistryEntry *service, IODisplayModeID mode, IOOptionBits flags, VDDetailedTimingRec ** detailed )
+IOReturn IOFB::wrapvalidateDisplayMode( IONDRVFramebuffer *service, IODisplayModeID mode, IOOptionBits flags, VDDetailedTimingRec ** detailed )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	DBGLOG("iofb", "[ validateDisplayMode fb:0x%llx id:0x%08x flags:%x", (UInt64)service, mode, flags);
@@ -2833,7 +2833,7 @@ IOReturn IOFB::wrapvalidateDisplayMode( IORegistryEntry *service, IODisplayModeI
 	return result;
 }
 
-IOReturn IOFB::wrapsetDetailedTiming( IORegistryEntry *service, IODisplayModeID mode, IOOptionBits options, void * description, IOByteCount descripSize )
+IOReturn IOFB::wrapsetDetailedTiming( IONDRVFramebuffer *service, IODisplayModeID mode, IOOptionBits options, void * description, IOByteCount descripSize )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	DBGLOG("iofb", "[ setDetailedTiming fb:0x%llx id:0x%08x options:%x", (UInt64)service, mode, options);
@@ -2845,7 +2845,7 @@ IOReturn IOFB::wrapsetDetailedTiming( IORegistryEntry *service, IODisplayModeID 
 	return result;
 }
 
-void IOFB::wrapgetCurrentConfiguration( IORegistryEntry *service )
+void IOFB::wrapgetCurrentConfiguration( IONDRVFramebuffer *service )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	DBGLOG("iofb", "[ getCurrentConfiguration fb:0x%llx", (UInt64)service);
@@ -2853,7 +2853,7 @@ void IOFB::wrapgetCurrentConfiguration( IORegistryEntry *service )
 	DBGLOG("iofb", "] getCurrentConfiguration");
 }
 
-IOReturn IOFB::wrapdoControl( IORegistryEntry *service, UInt32 code, void * params )
+IOReturn IOFB::wrapdoControl( IONDRVFramebuffer *service, UInt32 code, void * params )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	DBGLOG("iofb", "[ doControl fb:0x%llx code:%d", (UInt64)service, code);
@@ -2865,7 +2865,7 @@ IOReturn IOFB::wrapdoControl( IORegistryEntry *service, UInt32 code, void * para
 	return result;
 }
 
-IOReturn IOFB::wrapdoStatus( IORegistryEntry *service, UInt32 code, void * params )
+IOReturn IOFB::wrapdoStatus( IONDRVFramebuffer *service, UInt32 code, void * params )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	DBGLOG("iofb", "[ doStatus fb:0x%llx code:%d", (UInt64)service, code);
@@ -2877,7 +2877,7 @@ IOReturn IOFB::wrapdoStatus( IORegistryEntry *service, UInt32 code, void * param
 	return result;
 }
 
-IODeviceMemory * IOFB::wrapmakeSubRange( IORegistryEntry *service, IOPhysicalAddress64 start, IOPhysicalLength64  length )
+IODeviceMemory * IOFB::wrapmakeSubRange( IONDRVFramebuffer *service, IOPhysicalAddress64 start, IOPhysicalLength64  length )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	DBGLOG("iofb", "[ makeSubRange fb:0x%llx start:0x%llx length:0x%llx", (UInt64)service, start, length);
@@ -2886,7 +2886,7 @@ IODeviceMemory * IOFB::wrapmakeSubRange( IORegistryEntry *service, IOPhysicalAdd
 	return result;
 }
 
-IODeviceMemory * IOFB::wrapfindVRAM( IORegistryEntry *service )
+IODeviceMemory * IOFB::wrapfindVRAM( IONDRVFramebuffer *service )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	DBGLOG("iofb", "[ findVRAM fb:0x%llx", (UInt64)service);
@@ -2895,7 +2895,7 @@ IODeviceMemory * IOFB::wrapfindVRAM( IORegistryEntry *service )
 	return result;
 }
 
-IOTVector * IOFB::wrapundefinedSymbolHandler( IORegistryEntry *service, const char * libraryName, const char * symbolName )
+IOTVector * IOFB::wrapundefinedSymbolHandler( IONDRVFramebuffer *service, const char * libraryName, const char * symbolName )
 {
 	IOFBVars *iofbVars = callbackIOFB->getIOFBVars(service);
 	DBGLOG("iofb", "[ undefinedSymbolHandler fb:0x%llx \"%s\" \"%s\"", (UInt64)service, libraryName, symbolName);

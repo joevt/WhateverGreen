@@ -105,12 +105,12 @@ private:
 	/**
 	 *  Each IOFramebuffer has it's own IOFB settings
 	 */
-	static IOFBVars *getIOFBVars(IORegistryEntry *service);
+	static IOFBVars *getIOFBVars(IOFramebuffer *service);
 
 	/**
 	 *  A vtable is shared by multiple framebuffers of the same class
 	 */
-	static IOFBvtable *getIOFBvtable(IORegistryEntry *service);
+	static IOFBvtable *getIOFBvtable(IOFramebuffer *service);
 
 
 	/**
@@ -146,8 +146,7 @@ private:
 
 
 	static char * DumpOneDisplayParameters(char * buf, size_t bufSize, uintptr_t * value, uintptr_t numParameters);
-
-	void UpdateAttribute( IORegistryEntry *service, bool set, IOIndex connectIndex, IOSelect attribute, IOReturn result, uintptr_t * value, unsigned int size);
+	void UpdateAttribute( IOFramebuffer *service, bool set, IOIndex connectIndex, IOSelect attribute, IOReturn result, uintptr_t * value, unsigned int size);
 };
 
 #endif /* kern_iofbdebug_hpp */
