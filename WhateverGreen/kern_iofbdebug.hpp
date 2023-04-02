@@ -44,29 +44,44 @@ public:
 
 private:
 
-
 	/**
-	 *  IOFramebuffer vtable function types
+	 *  IOFramebuffer vtable
 	 */
 	#define onevtableitem(_patch, _index, _result, _name, _params) using t_ ## _name = _result (*) _params;
 	#include "IOFramebuffer_vtable.hpp"
 
-	/**
-	 *  Variables per IOFramebuffer service
-	 */
 	class IOFBvtable {
 		public:
 			uintptr_t vtable = 0;
 			#define onevtableitem(_patch, _index, _result, _name, _params) t_ ## _name org ## _name { nullptr };
 			#include "IOFramebuffer_vtable.hpp"
 	};
+	typedef IOFBvtable* IOFBvtablePtr;
+	IOFBvtablePtr *iofbvtables;
+	SInt32 iofbvtablesCount = 0;
 
+	static IOFBvtable *getIOFBvtable(IOFramebuffer *service);
+
+	struct IOFramebuffer_vtableIndex { enum : size_t {
+		#define onevtableitem(_patch, _index, _result, _name, _params) _name _index ,
+		#include "IOFramebuffer_vtable.hpp"
+	}; };
+
+	#define onevtableitem(_patch, _index, _result, _name, _params) static _result wrap ## _name _params;
+	#include "IOFramebuffer_vtable.hpp"
+
+	mach_vm_address_t orgFramebufferInit {};
+	static void wrapFramebufferInit(IOFramebuffer *fb);
+
+
+	/**
+	 *  IOFB settings per IOFramebuffer service
+	 */
 	class IOFBVars {
 		public:
-			/**
-			 *  IOFB settings per IOFramebuffer service
-			 */
 			IOFramebuffer *fb = NULL;
+			IOFBvtable *iofbvtable = NULL;
+
 			bool iofbValidateAll = false;
 			bool iofbSidebandDownRep = false;
 #if 0
@@ -91,49 +106,19 @@ private:
 			UInt32 iofbColorDepthsSupported = 0; // set only
 			// 0 = don't override
 			// -1 = all bits
-
-			IOFBvtable *iofbvtable = NULL;;
 	};
 	typedef IOFBVars* IOFBVarsPtr;
-	typedef IOFBvtable* IOFBvtablePtr;
 	IOFBVarsPtr *iofbvars;
-	IOFBvtablePtr *iofbvtables;
 	SInt32 iofbvarsCount = 0;
-	SInt32 iofbvtablesCount = 0;
+
+	static IOFBVars *getIOFBVars(IOFramebuffer *service);
+
 
 	/**
 	 *  Private self instance for callbacks
 	 */
-	static IOFB *callbackIOFB;
-
-	/**
-	 *  Each IOFramebuffer has it's own IOFB settings
-	 */
-	static IOFBVars *getIOFBVars(IOFramebuffer *service);
-
-	/**
-	 *  A vtable is shared by multiple framebuffers of the same class
-	 */
-	static IOFBvtable *getIOFBvtable(IOFramebuffer *service);
-
-
-	/**
-	 *  Original IOGraphics framebuffer init handler
-	 */
-	mach_vm_address_t orgFramebufferInit {};
-
-	/**
-	 *  IOFramebuffer initialisation wrapper used for screen distortion fixes
-	 *
-	 *  @param fb  framebuffer instance
-	 */
-	static void wrapFramebufferInit(IOFramebuffer *fb);
-
-
-	/**
-	 *  Disable the patches based on -iofboff boot-arg
-	 */
 	bool disableIOFB = false;
+	static IOFB *callbackIOFB;
 
 	/**
 	 *  gIOGATFlags, imported from the framebuffer kext, defined in IOGraphicsFamily/IOFramebuffer.cpp
@@ -141,14 +126,9 @@ private:
 	uint32_t *gIOGATFlagsPtr {nullptr};
 
 
-	struct IOFramebuffer_vtableIndex { enum : size_t {
-#define onevtableitem(_patch, _index, _result, _name, _params) _name _index ,
-#include "IOFramebuffer_vtable.hpp"
-	}; };
-#define onevtableitem(_patch, _index, _result, _name, _params) static _result wrap ## _name _params;
-#include "IOFramebuffer_vtable.hpp"
-
-
+	/**
+	 *  Miscellaneous functions
+	 */
 	static char * DumpOneDisplayParameters(char * buf, size_t bufSize, uintptr_t * value, uintptr_t numParameters);
 	void UpdateAttribute( IOFramebuffer *service, bool set, IOIndex connectIndex, IOSelect attribute, IOReturn result, uintptr_t * value, unsigned int size);
 };
