@@ -420,14 +420,57 @@ bool IGFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t a
 			}
 
 			maxTimingWidth = 0;
+			maxTimingHeight = 0;
 			PE_parse_boot_argn("igfxmaxwidth", &maxTimingWidth, sizeof(maxTimingWidth));
-			if (maxTimingWidth > 0) {
+			PE_parse_boot_argn("igfxmaxheight", &maxTimingHeight, sizeof(maxTimingHeight));
+			if (maxTimingWidth || maxTimingHeight) {
 				KernelPatcher::RouteRequest requests[] {
 					{"__ZN31AppleIntelFramebufferController12getMaxTimingEPhPjS1_", wrapGetMaxTiming, orgGetMaxTiming},
 					{"__ZN21AppleIntelFramebuffer18ValidateSourceSizeEP29IODetailedTimingInformationV2", wrapValidateSourceSize, orgValidateSourceSize},
 					{"__ZN21AppleIntelFramebuffer41ComputeTransformAndSetDimensions_InternalERK29IODetailedTimingInformationV2RjS3_S3_S3_S3_S3_S3_S3_", wrapComputeTransformAndSetDimensions_Internal, orgComputeTransformAndSetDimensions_Internal},
+					{"__ZN21AppleIntelFramebuffer19initTransactionCapsEv", wrapInitTransactionCaps, orgInitTransactionCaps},
 				};
 				patcher.routeMultiple(index, requests, address, size);
+				
+				{
+					// The following four patches are made within AppleIntelFramebuffer::wrapInitTransactionCaps
+					uint32_t n;
+					uint8_t *p = (uint8_t*)&n;
+
+					if (maxTimingWidth) {
+						{
+							n = (maxTimingWidth + 1) * 1000;
+							const uint8_t find[] = { 0x81, 0xF9, 0xE8, 0x23, 0x4E, 0x00 }; // 81F9E8234E00           cmp        ecx, 5121000
+							const uint8_t repl[] = { 0x81, 0xF9, p[0], p[1], p[2], p[3] }; // 81F9E8234E00           cmp        ecx, (maxTimingWidth + 1) * 1000
+							KernelPatcher::LookupPatch patch { currentFramebuffer, find, repl, sizeof(find), 1, NULL, NULL };
+							patcher.applyLookupPatch(&patch);
+						}
+						{
+							n = maxTimingWidth;
+							const uint8_t find[] = { 0x41, 0xBF, 0x00, 0x14, 0x00, 0x00 }; // 41BF00140000           mov        r15d, 5120
+							const uint8_t repl[] = { 0x41, 0xBF, p[0], p[1], p[2], p[3] }; // 41BF00140000           mov        r15d, maxTimingWidth
+							KernelPatcher::LookupPatch patch { currentFramebuffer, find, repl, sizeof(find), 1, NULL, NULL };
+							patcher.applyLookupPatch(&patch);
+						}
+					}
+					if (maxTimingHeight) {
+						{
+							n = (maxTimingHeight + 1) * 1000;
+							const uint8_t find[] = { 0x3D, 0xE8, 0xF5, 0x2B, 0x00       }; // 3DE8F52B00             cmp        eax, 2881000
+							const uint8_t repl[] = { 0x3D, p[0], p[1], p[2], p[3]       }; // 3DE8F52B00             cmp        eax, (maxTimingHeight + 1) * 1000
+							KernelPatcher::LookupPatch patch { currentFramebuffer, find, repl, sizeof(find), 1, NULL, NULL };
+							patcher.applyLookupPatch(&patch);
+						}
+						{
+							n = maxTimingHeight;
+							const uint8_t find[] = { 0x41, 0xBE, 0x40, 0x0B, 0x00, 0x00 }; // 41BE400B0000           mov        r14d, 2880
+							const uint8_t repl[] = { 0x41, 0xBE, p[0], p[1], p[2], p[3] }; // 41BE400B0000           mov        r14d, maxTimingHeight
+							KernelPatcher::LookupPatch patch { currentFramebuffer, find, repl, sizeof(find), 1, NULL, NULL };
+							patcher.applyLookupPatch(&patch);
+						}
+					}
+					DBGLOG("igfx", "applyMaxTimingPatch applied max timing patch");
+				}
 			}
 
 			maxVGAPixelClock = 0;
@@ -448,6 +491,7 @@ bool IGFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t a
 			
 			maxScalerDimension = 0;
 			PE_parse_boot_argn("igfxmaxscale", &maxScalerDimension, sizeof(maxScalerDimension));
+			// max scale is limited to framebuffer size which is usually 512MB
 			if (maxScalerDimension > 0) {
 				uint8_t *maxScalerDimensionPtr = (uint8_t*)&maxScalerDimension;
 				uint32_t orgMaxScalerDimension = 8191;
@@ -2291,8 +2335,15 @@ uint32_t IGFX::wrapGetMaxTiming(uint64_t* block, uint32_t* maxWidth, uint32_t* m
 		   block[0], block[1], block[2], block[3], block[4], block[5], block[6], block[7],
 		   block[8], block[9], block[10], block[11], block[12], block[13], block[14], block[15]);
 	 */
-	DBGLOG("igfx", "wrapGetMaxTiming: x:%d y:%d r:%d", *maxWidth, *maxHeight, r);
-	*maxWidth = callbackIGFX->maxTimingWidth;
+	DBGLOG("igfx", "wrapGetMaxTiming: %dx%d override:%dx%d r:%d", *maxWidth, *maxHeight, callbackIGFX->maxTimingWidth, callbackIGFX->maxTimingHeight, r);
+	if (callbackIGFX->maxTimingWidth) {
+		// This value determines if a display is allowed to have modes with width > 4096. If you don't see the following message, then add igfxmaxwidth=5120 to boot-args.
+		// [IGFB][INFO   ] FB0: Enabling 5k single link display support
+		*maxWidth = callbackIGFX->maxTimingWidth;
+	}
+	if (callbackIGFX->maxTimingHeight) {
+		*maxHeight = callbackIGFX->maxTimingHeight; // this value might be unused
+	}
 	return r;
 }
 
@@ -2365,4 +2416,20 @@ int IGFX::wrapComputeTransformAndSetDimensions_Internal(void *thisAppleIntelFram
 	}
 	DBGLOG("igfx", "] IGFX::wrapComputeTransformAndSetDimensions_Internal %d,%d,%d,%d,%d,%d,%d,%d r:%d", x1, x2, x3, x4, x5, x6, x7, x8, r);
 	return r;
+}
+
+void IGFX::wrapInitTransactionCaps(void *thisAppleIntelFrameBuffer) {
+	FunctionCast(wrapInitTransactionCaps, callbackIGFX->orgInitTransactionCaps)(thisAppleIntelFrameBuffer);
+
+	DBGLOG("igfx", "[] IGFX::wrapInitTransactionCaps multilink:%ux%u capabilities:%ux%u %u %u %u %u",
+		*(UInt16*)((UInt8*)thisAppleIntelFrameBuffer + 0x219C),
+		*(UInt16*)((UInt8*)thisAppleIntelFrameBuffer + 0x219E),
+		*(UInt16*)((UInt8*)thisAppleIntelFrameBuffer + 0x21A0),
+		*(UInt16*)((UInt8*)thisAppleIntelFrameBuffer + 0x21A2),
+
+		*(UInt16*)((UInt8*)thisAppleIntelFrameBuffer + 0x21B6),
+		*(UInt16*)((UInt8*)thisAppleIntelFrameBuffer + 0x21B8),
+		*(UInt16*)((UInt8*)thisAppleIntelFrameBuffer + 0x21BA),
+		*(UInt16*)((UInt8*)thisAppleIntelFrameBuffer + 0x21BC)
+	);
 }

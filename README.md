@@ -117,6 +117,7 @@ Read [FAQs](./Manual/) and avoid asking any questions. No support is provided fo
 | `igfxframe=frame` | `AAPL,ig-platform-id` or `AAPL,snb-platform-id` property on IGPU 	| Inject a dedicated framebuffer identifier into IGPU (only for TESTING purposes) 	|
 | `igfxfw=2` 		    | `igfxfw` property on IGPU 	| Force loading of Apple GuC firmware 	|
 | `igfxgl=1` 		    | `disable-metal` 	| Disable Metal support on Intel 	|
+| `igfxmaxheight=HEIGHT` | N/A | Boot argument for Kaby Lake and Coffee Lake. 5120x4096 21Hz is probably the maximum achieveable timing resolution (width and height). |
 | `igfxmaxscale=PIXELS` | N/A | To change the scaler maximum width and maximum height (tested Ventura beta, Coffee Lake). Set this to 16383 to allow scaled modes greater than 8191x8191. Requires -iofbon and "validate all modes" flag. 15392x8658 is probably the maximum 16:9 scaled resolution (limited to 512 MB). |
 | `igfxmaxwidth=WIDTH` | N/A | Boot argument for Kaby Lake and Coffee Lake in Big Sur. Set this to 4097 or greater to enable custom display timings with width > 4096 for displays that are ≤ 4096 wide. `-Disable5KSST` will disable this. |
 | `igfxmetal=1` 	  | `enable-metal` 	| Force enable Metal support on Intel for offline rendering 	|

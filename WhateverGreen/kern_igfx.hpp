@@ -2446,9 +2446,10 @@ private:
 	bool workWithAlreadyLoadedKexts {false};
 
 	/**
-	 *  Override max timing width
+	 *  Override max timing width and height
 	 */
 	uint32_t maxTimingWidth {0};
+	uint32_t maxTimingHeight {0};
 
 	/**
 	 *  Max pixel clock of VGA adapter
@@ -2555,6 +2556,8 @@ private:
 		unsigned int& x7, unsigned int& x8
 	);
 	mach_vm_address_t orgComputeTransformAndSetDimensions_Internal {};
+	static void wrapInitTransactionCaps(void *thisAppleIntelFrameBuffer);
+	mach_vm_address_t orgInitTransactionCaps {};
 	static void doFrameBufferStuff();
 
 	/**
