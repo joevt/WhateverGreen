@@ -2547,9 +2547,9 @@ private:
 
 	static uint32_t wrapGetMaxTiming(uint64_t* block, uint32_t* maxWidth, uint32_t* maxHeight);
 	mach_vm_address_t orgGetMaxTiming {};
-	static int wrapValidateSourceSize(void *thisAppleIntelFrameBuffer, IODetailedTimingInformationV2* detailedTiming);
+	static bool wrapValidateSourceSize(void *thisAppleIntelFrameBuffer, IODetailedTimingInformationV2* detailedTiming);
 	mach_vm_address_t orgValidateSourceSize {};
-	static int wrapComputeTransformAndSetDimensions_Internal(void *thisAppleIntelFrameBuffer,
+	static void wrapComputeTransformAndSetDimensions_Internal(void *thisAppleIntelFrameBuffer,
 		IODetailedTimingInformationV2 const* detailedTiming,
 		unsigned int& x1, unsigned int& x2, unsigned int& x3,
 		unsigned int& x4, unsigned int& x5, unsigned int& x6,

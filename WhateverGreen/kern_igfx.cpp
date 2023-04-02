@@ -10,6 +10,7 @@
 #include "kern_guc.hpp"
 #include "kern_agdc.hpp"
 #include "kern_igfx_kexts.hpp"
+#include "kern_iofbdebug.hpp"
 
 #include <Headers/kern_api.hpp>
 #include <Headers/kern_cpu.hpp>
@@ -2347,75 +2348,42 @@ uint32_t IGFX::wrapGetMaxTiming(uint64_t* block, uint32_t* maxWidth, uint32_t* m
 	return r;
 }
 
-
-static void dumpDetailedTiming(IODetailedTimingInformationV2 const* detailedTiming){
-	DBGLOG("igfx", "detailedTiming: scaledInset:%d,%d scalerFlags:0x%x scaled:%d,%d signalConfig:0x%x signalLevels:%d, pixelClock:%lld;%lld,%lld active:%d,%d hblank:%d,%d,%d;%d,%d vblank:%d,%d,%d;%d,%d,%d border:%d,%d;%d,%d links:%d pixelEncoding:%hd bpc:%hd colorimetry:%hd dynamicRange:%hd dsc_bpp:%hd dsc_slice:%hd,%hd",
-		detailedTiming->horizontalScaledInset,
-		detailedTiming->verticalScaledInset,
-		detailedTiming->scalerFlags,
-		detailedTiming->horizontalScaled,
-		detailedTiming->verticalScaled,
-		detailedTiming->signalConfig,
-		detailedTiming->signalLevels,
-		detailedTiming->pixelClock,
-		detailedTiming->minPixelClock,
-		detailedTiming->maxPixelClock,
-		detailedTiming->horizontalActive,
-		detailedTiming->verticalActive,
-		detailedTiming->horizontalBlanking,
-		detailedTiming->horizontalSyncOffset,
-		detailedTiming->horizontalSyncPulseWidth,
-		detailedTiming->horizontalSyncConfig,
-		detailedTiming->horizontalSyncLevel,
-		detailedTiming->verticalBlanking,
-		detailedTiming->verticalSyncOffset,
-		detailedTiming->verticalSyncPulseWidth,
-		detailedTiming->verticalSyncConfig,
-		detailedTiming->verticalSyncLevel,
-		detailedTiming->verticalBlankingExtension,
-		detailedTiming->horizontalBorderLeft,
-		detailedTiming->verticalBorderTop,
-		detailedTiming->horizontalBorderRight,
-		detailedTiming->verticalBorderBottom,
-		detailedTiming->numLinks,
-		detailedTiming->pixelEncoding,
-		detailedTiming->bitsPerColorComponent,
-		detailedTiming->colorimetry,
-		detailedTiming->dynamicRange,
-		detailedTiming->dscCompressedBitsPerPixel,
-		detailedTiming->dscSliceWidth,
-		detailedTiming->dscSliceHeight
-	);
-}
-
-int IGFX::wrapValidateSourceSize(void *thisAppleIntelFrameBuffer, IODetailedTimingInformationV2* detailedTiming) {
+bool IGFX::wrapValidateSourceSize(void *thisAppleIntelFrameBuffer, IODetailedTimingInformationV2* detailedTiming) {
 	IODetailedTimingInformationV2 org = *detailedTiming;
+	#ifdef DEBUG
+	char timinginfo[1000];
+	#endif
 	DBGLOG("igfx", "[ IGFX::wrapValidateSourceSize");
-	int r = FunctionCast(wrapValidateSourceSize, callbackIGFX->orgValidateSourceSize)(thisAppleIntelFrameBuffer, detailedTiming);
+	bool r = FunctionCast(wrapValidateSourceSize, callbackIGFX->orgValidateSourceSize)(thisAppleIntelFrameBuffer, detailedTiming);
 	if (memcmp(&org, detailedTiming, sizeof(org))) {
-		dumpDetailedTiming(detailedTiming);
+		DBGLOG("igfx", "wrapValidateSourceSize original detailedTiming = { %s }", DumpOneDetailedTimingInformationPtr(timinginfo, sizeof(timinginfo), &org, sizeof(org)));
+		DBGLOG("igfx", "wrapValidateSourceSize modified detailedTiming = { %s }", DumpOneDetailedTimingInformationPtr(timinginfo, sizeof(timinginfo), detailedTiming, sizeof(*detailedTiming)));
 	}
-	DBGLOG("igfx", "] IGFX::wrapValidateSourceSize r:%d", r);
+	DBGLOG("igfx", "] IGFX::wrapValidateSourceSize result:%s", r ? "true" : "false");
 	return r;
 }
 
-int IGFX::wrapComputeTransformAndSetDimensions_Internal(void *thisAppleIntelFrameBuffer,
+void IGFX::wrapComputeTransformAndSetDimensions_Internal(void *thisAppleIntelFrameBuffer,
 	IODetailedTimingInformationV2 const* detailedTiming,
 	unsigned int& x1, unsigned int& x2, unsigned int& x3,
 	unsigned int& x4, unsigned int& x5, unsigned int& x6,
 	unsigned int& x7, unsigned int& x8
 ) {
+	// on input, x1 to x8 are 0
+	#ifdef DEBUG
+	char timinginfo[1000];
+	#endif
 	IODetailedTimingInformationV2 org = *detailedTiming;
-	DBGLOG("igfx", "[ IGFX::wrapComputeTransformAndSetDimensions_Internal");
-	dumpDetailedTiming(detailedTiming);
-	int r = FunctionCast(wrapComputeTransformAndSetDimensions_Internal, callbackIGFX->orgComputeTransformAndSetDimensions_Internal)(
+	
+	DBGLOG("igfx", "[ IGFX::wrapComputeTransformAndSetDimensions_Internal detailedTiming = { %s }", DumpOneDetailedTimingInformationPtr(timinginfo, sizeof(timinginfo), detailedTiming, sizeof(*detailedTiming)));
+	FunctionCast(wrapComputeTransformAndSetDimensions_Internal, callbackIGFX->orgComputeTransformAndSetDimensions_Internal)(
 		thisAppleIntelFrameBuffer, detailedTiming, x1, x2, x3, x4, x5, x6, x7, x8
 	);
+	
 	if (memcmp(&org, detailedTiming, sizeof(org))) {
-		dumpDetailedTiming(detailedTiming);
+		DBGLOG("igfx", "wrapComputeTransformAndSetDimensions_Internal modified detailedTiming = { %s }", DumpOneDetailedTimingInformationPtr(timinginfo, sizeof(timinginfo), detailedTiming, sizeof(*detailedTiming)));
 	}
-	DBGLOG("igfx", "] IGFX::wrapComputeTransformAndSetDimensions_Internal %d,%d,%d,%d,%d,%d,%d,%d r:%d", x1, x2, x3, x4, x5, x6, x7, x8, r);
-	return r;
+	DBGLOG("igfx", "] IGFX::wrapComputeTransformAndSetDimensions_Internal transform = { %u,%u,%u,%u,%u,%u,%u,%u }", x1, x2, x3, x4, x5, x6, x7, x8);
 }
 
 void IGFX::wrapInitTransactionCaps(void *thisAppleIntelFrameBuffer) {
