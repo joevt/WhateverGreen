@@ -147,6 +147,7 @@ void WEG::init() {
 	rad.init(appleBacklightPatch == APPLBKL_NAVI10);
 	cdf.init();
 	dpd.init();
+	nvmtl.init();
 
 	if (getKernelVersion() >= KernelVersion::BigSur) {
 		unfair.init();
@@ -163,6 +164,7 @@ void WEG::deinit() {
 	rad.deinit();
 	cdf.deinit();
 	dpd.deinit();
+	nvmtl.deinit();
 
 	if (getKernelVersion() >= KernelVersion::BigSur) {
 		unfair.deinit();
@@ -308,6 +310,7 @@ void WEG::processKernel(KernelPatcher &patcher) {
 		rad.processKernel(patcher, devInfo);
 		cdf.processKernel(patcher, devInfo);
 		dpd.processKernel(patcher, devInfo);
+		nvmtl.processKernel(patcher, devInfo);
 
 		if (getKernelVersion() >= KernelVersion::BigSur) {
 			unfair.processKernel(patcher, devInfo);
@@ -398,6 +401,7 @@ void WEG::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t ad
 	rad.processKext(patcher, index, address, size);
 	cdf.processKext(patcher, index, address, size);
 	dpd.processKext(patcher, index, address, size);
+	nvmtl.processKext(patcher, index, address, size);
 
 	DBGLOG("weg", "] WEG::processKext");
 }

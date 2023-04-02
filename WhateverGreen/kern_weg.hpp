@@ -19,6 +19,7 @@
 #include "kern_shiki.hpp"
 #include "kern_unfair.hpp"
 #include "kern_iofbdebug.hpp"
+#include "kern_nvmtl.hpp"
 
 class IOFramebuffer;
 class IODisplay;
@@ -78,6 +79,11 @@ private:
 	 *  FairPlay fixes for modern operating systems
 	 */
 	UNFAIR unfair;
+
+	/**
+	 *  GeForceMTLDriver fixes for for 12.5
+	 */
+	NVMTL nvmtl;
 
 	/**
 	 *  FB_DETECT   autodetects based on the installed GPU.
