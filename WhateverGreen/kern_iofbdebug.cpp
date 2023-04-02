@@ -659,7 +659,7 @@ const char *GetOneAppleTimingID(IOAppleTimingID appleTimingID) {
 #define CASTG(_name) _name ## whole, _name ## frac % 10 ? 3 : _name ## frac % 100 ? 2 : 1, _name ## frac % 10 ? _name ## frac : _name ## frac % 100 ? _name ## frac / 10 : _name ## frac / 100
 
 // "detailed"
-static char * DumpOneDetailedTimingInformationPtr(char * buf, size_t bufSize, const void * IOFBDetailedTiming, size_t timingSize) {
+char * DumpOneDetailedTimingInformationPtr(char * buf, size_t bufSize, const void * IOFBDetailedTiming, size_t timingSize) {
 	int inc;
 	char * result = buf;
 
@@ -954,7 +954,7 @@ static char * DumpOneFBDisplayModeDescriptionPtr(char * buf, size_t bufSize, IOF
 } // DumpOneFBDisplayModeDescriptionPtr
 #endif
 
-static UInt32 AttribChars(UInt32 attribute) {
+UInt32 IOFBAttribChars(UInt32 attribute) {
 	UInt32 aswap = OSSwapBigToHostInt32(attribute);
 	char* achar = (char*)&aswap;
 	if (!achar[0]) achar[0] = '.';
@@ -966,7 +966,7 @@ static UInt32 AttribChars(UInt32 attribute) {
 
 #define STRTOORD4(_s) ((_s[0]<<24) | (_s[1]<<16) | (_s[2]<<8) | (_s[3]))
 
-static const char * GetAttributeName(UInt32 attribute, bool forConnection)
+const char * IOFBGetAttributeName(UInt32 attribute, bool forConnection)
 {
 	switch (attribute) {
 		case kIOPowerStateAttribute           : return "kIOPowerStateAttribute";
@@ -1064,9 +1064,9 @@ static const char * GetAttributeName(UInt32 attribute, bool forConnection)
 static char * DumpOneAttribute(char * buf, size_t bufSize, UInt32 attribute, bool forConnection)
 {
 	char * result = buf;
-	UInt32 attributeChar = AttribChars(attribute);
-	const char *attributeStr = GetAttributeName(attribute, forConnection);
-	bprintf(buf, bufSize, "%x=\'%.4s\'%s%s", attribute, (char*)&attributeChar, attributeStr ? "=" : "", attributeStr ? attributeStr : "");
+	UInt32 attributeChar = IOFBAttribChars(attribute);
+	const char *attributeStr = IOFBGetAttributeName(attribute, forConnection);
+	bprintf(buf, bufSize, "0x%x=\'%.4s\'%s%s", attribute, (char*)&attributeChar, attributeStr ? "=" : "", attributeStr ? attributeStr : "");
 	return result;
 }
 
@@ -1371,7 +1371,7 @@ static char * DumpOneInterruptType(char * buf, size_t bufSize, IOSelect interrup
 } // DumpOneInterruptType
 #endif
 
-static char * DumpOneReturn(char * buf, size_t bufSize, IOReturn val)
+char * DumpOneReturn(char * buf, size_t bufSize, IOReturn val)
 {
 	char * result = buf;
 	char unknown[20];

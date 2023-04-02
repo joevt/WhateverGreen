@@ -11,6 +11,10 @@
 
 #include <Headers/kern_iokit.hpp>
 #include <IOKit/ndrvsupport/IONDRVFramebuffer.h>
+char * DumpOneDetailedTimingInformationPtr(char * buf, size_t bufSize, const void * IOFBDetailedTiming, size_t timingSize);
+char * DumpOneReturn(char * buf, size_t bufSize, IOReturn val);
+UInt32 IOFBAttribChars(UInt32 attribute);
+const char * IOFBGetAttributeName(UInt32 attribute, bool forConnection);
 
 
 class IOFB {
