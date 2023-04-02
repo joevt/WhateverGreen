@@ -425,54 +425,6 @@ Replace:
 
 */
 
-//========================================================================================
-// Utility functions
-
-#define kIOFBAttributesKey "IOFBAttributes"
-
-typedef struct Attribute {
-	bool      set;
-	bool      notnull;
-	IOIndex   connectIndex;
-	IOSelect  attribute;
-	IOReturn  result;
-	UInt64    value;
-} Attribute;
-
-void IOFB::UpdateAttribute( IOFramebuffer *service, bool set, IOIndex connectIndex, IOSelect attribute, IOReturn result, uintptr_t * value, unsigned int size)
-{
-	Attribute newatr = { set, value != NULL, connectIndex, attribute, result };
-	OSArray *array = OSDynamicCast(OSArray, service->getProperty(kIOFBAttributesKey));
-	OSData *data;
-
-	int idx = 0;
-	if (!array) {
-		array = OSArray::withCapacity(0);
-	}
-	else {
-		array = (OSArray*)array->copyCollection();
-		if (array) {
-			while ((data = (OSData *)array->getObject(idx))) {
-				Attribute *atr = (Attribute *)data->getBytesNoCopy();
-				if (!atr || (atr->set == newatr.set && atr->connectIndex == newatr.connectIndex && atr->attribute == newatr.attribute && atr->result == newatr.result)) {
-					array->removeObject(idx);
-					continue;
-				}
-				idx++;
-			}
-		}
-	}
-	if (array) {
-		OSData *data = OSData::withBytes(&newatr, offsetof(Attribute, value));
-		if (value) {
-			data->appendBytes(value, size);
-		}
-		array->setObject(idx, data);
-		data->release();
-
-		service->setProperty(kIOFBAttributesKey, array);
-	}
-} // UpdateAttribute
 
 //========================================================================================
 // String functions
@@ -1629,6 +1581,55 @@ static char * DumpOneI2CReserved(char * buf, size_t bufSize, IOI2CRequest * requ
 	}
 	return result;
 } // DumpOneI2CReserved
+
+//========================================================================================
+// Utility functions
+
+#define kIOFBAttributesKey "IOFBAttributes"
+
+typedef struct Attribute {
+	bool      set;
+	bool      notnull;
+	IOIndex   connectIndex;
+	IOSelect  attribute;
+	IOReturn  result;
+	UInt64    value;
+} Attribute;
+
+void IOFB::UpdateAttribute( IOFramebuffer *service, bool set, IOIndex connectIndex, IOSelect attribute, IOReturn result, uintptr_t * value, unsigned int size)
+{
+	Attribute newatr = { set, value != NULL, connectIndex, attribute, result };
+	OSArray *array = OSDynamicCast(OSArray, service->getProperty(kIOFBAttributesKey));
+	OSData *data;
+
+	int idx = 0;
+	if (!array) {
+		array = OSArray::withCapacity(0);
+	}
+	else {
+		array = (OSArray*)array->copyCollection();
+		if (array) {
+			while ((data = (OSData *)array->getObject(idx))) {
+				Attribute *atr = (Attribute *)data->getBytesNoCopy();
+				if (!atr || (atr->set == newatr.set && atr->connectIndex == newatr.connectIndex && atr->attribute == newatr.attribute && atr->result == newatr.result)) {
+					array->removeObject(idx);
+					continue;
+				}
+				idx++;
+			}
+		}
+	}
+	if (array) {
+		OSData *data = OSData::withBytes(&newatr, offsetof(Attribute, value));
+		if (value) {
+			data->appendBytes(value, size);
+		}
+		array->setObject(idx, data);
+		data->release();
+		
+		service->setProperty(kIOFBAttributesKey, array);
+	}
+} // UpdateAttribute
 
 //========================================================================================
 // Wrapped functions
