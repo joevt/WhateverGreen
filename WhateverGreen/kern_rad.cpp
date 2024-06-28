@@ -683,9 +683,22 @@ void RAD::mergeProperties(OSDictionary *props, const char *prefix, IOService *pr
 void RAD::applyPropertyFixes(IOService *service, uint32_t connectorNum) {
 	if (service && getKernelVersion() >= KernelVersion::HighSierra) {
 		// Starting with 10.13.2 this is important to fix sleep issues due to enforced 6 screens
-		if (!service->getProperty("CFG,CFG_FB_LIMIT")) {
-			DBGLOG("rad", "setting fb limit to %u", connectorNum);
+		OSObject *theProperty = service->getProperty("CFG,CFG_FB_LIMIT");
+		if (!theProperty) {
+			DBGLOG("rad", "setting CFG_FB_LIMIT to %u", connectorNum);
 			service->setProperty("CFG_FB_LIMIT", connectorNum, 32);
+		}
+		else {
+			OSNumber *theNumber = OSDynamicCast(OSNumber, theProperty);
+			if (!theNumber) {
+				DBGLOG("rad", "CFG_FB_LIMIT is not a number!");
+			} else {
+				UInt32 theVal = theNumber->unsigned32BitValue();
+				if (theVal == connectorNum)
+					DBGLOG("rad", "CFG_FB_LIMIT is alrady set to %u", theVal);
+				else
+					DBGLOG("rad", "CFG_FB_LIMIT is set to %u instead of %u", theVal, connectorNum);
+			}
 		}
 
 		// In the past we set CFG_USE_AGDC to false, which caused visual glitches and broken multimonitor support.
@@ -709,8 +722,8 @@ void RAD::updateConnectorsInfo(void *atomutils, t_getAtomObjectTableForType gett
 
 			uint32_t consCount;
 			if (WIOKit::getOSDataValue(ctrl, "connector-count", consCount)) {
+				DBGLOG("rad", "getConnectorsInfo got size override to %u from %u", consCount, *sz);
 				*sz = consCount;
-				DBGLOG("rad", "getConnectorsInfo got size override to %u", *sz);
 			}
 
 			if (consPtr && consSize > 0 && *sz > 0 && RADConnectors::valid(consSize, *sz)) {
