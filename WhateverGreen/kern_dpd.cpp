@@ -32,6 +32,9 @@ static const uint8_t dellUP3218KRepl2[] = "\x41\x81\xFD\x47\x41\x00\x00\xeb\x2C"
 static const uint8_t dellUP3218KFind3[] = "\x41\x81\xFF\x47\x41\x00\x00\x75\x2C"; // cmp r15d, 0x4147;  jne xx
 static const uint8_t dellUP3218KRepl3[] = "\x41\x81\xFF\x47\x41\x00\x00\xeb\x2C"; // cmp r15d, 0x4147;  jmp xx
 
+static const uint8_t dellUP3218KFind4[] = "\x41\x81\xFE\x47\x41\x00\x00\x75\x2C"; // cmp r14d, 0x4147;  jne xx
+static const uint8_t dellUP3218KRepl4[] = "\x41\x81\xFE\x47\x41\x00\x00\xeb\x2C"; // cmp r14d, 0x4147;  jmp xx
+
 
 static UserPatcher::BinaryModPatch binaryPatch[] {
 	{
@@ -82,6 +85,14 @@ static UserPatcher::BinaryModPatch binaryPatch[] {
 		UserPatcher::FileSegment::SegmentTextText,
 		UserPatcher::ProcInfo::SectionDisabled
 	},
+	{
+		CPU_TYPE_X86_64, 0, // flags
+		dellUP3218KFind4, dellUP3218KRepl4, arrsize(dellUP3218KFind4) - 1, // find, replace, size (exclude extra null byte)
+		0, // skip  = 0 -> replace all occurrences
+		1, // count = 1 -> 1 set of hex inside the target binaries
+		UserPatcher::FileSegment::SegmentTextText,
+		UserPatcher::ProcInfo::SectionDisabled
+	},
 };
 
 typedef enum {
@@ -113,6 +124,7 @@ void DPD::init() {
 			binaryPatch[3].section = 1;
 			binaryPatch[4].section = 1;
 			binaryPatch[5].section = 1;
+			binaryPatch[6].section = 1;
 		}
 		if (patches) {
 			procInfo.section = 1;
