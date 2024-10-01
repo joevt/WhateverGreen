@@ -115,19 +115,19 @@ void DPD::init() {
 		if (getKernelVersion() < KernelVersion::Ventura ) patches &= ~dpdUP3218KCheck;
 		if (patches & dpdOverridePath) {
 			DBGLOG("dpd", "enabled patch for Displays Override path");
-			binaryPatch[0].section = 1;
-			binaryPatch[1].section = 1;
-			binaryPatch[2].section = 1;
+			binaryPatch[0].section = UserPatcher::ProcInfo::SectionNotDisabled;
+			binaryPatch[1].section = UserPatcher::ProcInfo::SectionNotDisabled;
+			binaryPatch[2].section = UserPatcher::ProcInfo::SectionNotDisabled;
 		}
 		if (patches & dpdUP3218KCheck) {
 			DBGLOG("dpd", "enabled patch for DellUP3218K check");
-			binaryPatch[3].section = 1;
-			binaryPatch[4].section = 1;
-			binaryPatch[5].section = 1;
-			binaryPatch[6].section = 1;
+			binaryPatch[3].section = UserPatcher::ProcInfo::SectionNotDisabled;
+			binaryPatch[4].section = UserPatcher::ProcInfo::SectionNotDisabled;
+			binaryPatch[5].section = UserPatcher::ProcInfo::SectionNotDisabled;
+			binaryPatch[6].section = UserPatcher::ProcInfo::SectionNotDisabled;
 		}
 		if (patches) {
-			procInfo.section = 1;
+			procInfo.section = UserPatcher::ProcInfo::SectionNotDisabled;
 			lilu.onProcLoadForce(&procInfo, 1, nullptr, nullptr, &binaryMod, 1);
 		}
 	}
