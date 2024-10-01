@@ -89,127 +89,133 @@ static const uint8_t gmp100Repl[] = { 0x40, 0x42, 0x0F, 0x00 }; // 400000 kHz
 // capability. May cause blackscreen with several configurations.
 
 // 10.4.11
-static const uint8_t frameworkFind_10_4[] {
+static const uint8_t CheckTimingWithRange_Find_10_4[] {
 	0xA8, 0x01,                                     // test al, 0x1
 	0x74, 0x0A,                                     // je +10
 	0xB8, 0x01, 0x00, 0x00, 0x00,                   // mov eax, 0x1
 	0xE9                                            // jmp <somewhere>
 };
 
-static const uint8_t frameworkRepl_10_4[] {
+static const uint8_t CheckTimingWithRange_Repl_10_4[] {
 	0x90, 0x90, 0x90, 0x90,                         // nop (4x)
 	0xB8, 0x00, 0x00, 0x00, 0x00,                   // mov eax, 0x0
 	0xE9                                            // jmp <somewhere>
 };
 
 // 10.5.8
-static const uint8_t frameworkFind_10_5[] {
+static const uint8_t CheckTimingWithRange_Find_10_5[] {
 	0x89, 0xD0,                                     // mov eax, edx
 	0x83, 0xE0, 0x01,                               // and eax, 0x1
 	0x85, 0xC0,                                     // test eax, eax
 	0x0F, 0x85                                      // jne <somewhere>
 };
 
-static const uint8_t frameworkRepl_10_5[] {
+static const uint8_t CheckTimingWithRange_Repl_10_5[] {
 	0x90, 0x90, 0x90,                               // nop (3x)
 	0xB9, 0x00, 0x00, 0x00, 0x00,                   // mov ecx, 0x0
 	0xE9                                            // jmp <somewhere>
 };
 
 // 10.6.8
-static const uint8_t frameworkFind_10_6[] {
+static const uint8_t CheckTimingWithRange_Find_10_6[] {
 	0xB9, 0x01, 0x00, 0x00, 0x00,                   // mov ecx, 0x1
 	0xA8, 0x01,                                     // test al, 0x1
 	0x0F, 0x85                                      // jne <somewhere>
 };
 
-static const uint8_t frameworkRepl_10_6[] {
+static const uint8_t CheckTimingWithRange_Repl_10_6[] {
 	0x90, 0x90, 0x90,                               // nop (3x)
 	0xB9, 0x00, 0x00, 0x00, 0x00,                   // mov ecx, 0x0
 	0xE9                                            // jmp <somewhere>
 };
 
 // 10.7.5
-static const uint8_t frameworkFind_10_7[] {
+static const uint8_t CheckTimingWithRange_Find_10_7[] {
 	0xF6, 0xC1, 0x01,                               // test cl, 0x1
 	0x74, 0x0A,                                     // je +10
 	0xB8, 0x01, 0x00, 0x00, 0x00,                   // mov eax, 0x1
 	0xE9                                            // jmp <somewhere>
 };
 
-static const uint8_t frameworkRepl_10_7[] {
+static const uint8_t CheckTimingWithRange_Repl_10_7[] {
 	0x90, 0x90, 0x90, 0x90, 0x90,                   // nop (5x)
 	0xB8, 0x00, 0x00, 0x00, 0x00,                   // mov eax, 0x0
 	0xE9                                            // jmp <somewhere>
 };
 
 // 10.8.5
-static const uint8_t frameworkFind_10_8[] {
+static const uint8_t CheckTimingWithRange_Find_10_8[] {
 	0xBF, 0x01, 0x00, 0x00, 0x00,                   // mov edi, 0x1
 	0xA8, 0x01,                                     // test al, 0x1
 	0x0F, 0x85                                      // jne <somewhere>
 };
 
-static const uint8_t frameworkRepl_10_8[] {
+static const uint8_t CheckTimingWithRange_Repl_10_8[] {
 	0x90, 0x90, 0x90,                               // nop (3x)
 	0xBF, 0x00, 0x00, 0x00, 0x00,                   // mov edi, 0x0
 	0xE9                                            // jmp <somewhere>
 };
 
 // 10.9.5, 10.10.5, 10.11.6, 10.12.6, 10.13.3
-static const uint8_t frameworkFind_10_9[] {
+static const uint8_t CheckTimingWithRange_Find_10_9[] {
 	0xB8, 0x01, 0x00, 0x00, 0x00,                   // mov  eax, 0x1
 	0xF6, 0xC1, 0x01,                               // test cl, 0x1
 	0x0F, 0x85                                      // jne  <somewhere>
 };
 
-static const uint8_t frameworkRepl_10_9[] {
+static const uint8_t CheckTimingWithRange_Repl_10_9[] {
 	0x90, 0x90, 0x90, 0x90,                         // nop (4x)
 	0xB8, 0x00, 0x00, 0x00, 0x00,                   // mov  eax, 0x0
 	0xE9                                            // jmp <somewhere>
 };
 
 // 10.13.4, 10.13.6 // use more specific match below for 10.14.6, 10.15.7
-static const uint8_t frameworkFind_10_13_4[] {
+static const uint8_t CheckTimingWithRange_Find_10_13_4[] {
 	0xBB, 0x01, 0x00, 0x00, 0x00,                   // mov ebx, 0x1
 	0xA8, 0x01,                                     // test al, 0x1
 	0x0F, 0x85                                      // jne <somewhere>
 };
 
-static const uint8_t frameworkRepl_10_13_4[] {
+static const uint8_t CheckTimingWithRange_Repl_10_13_4[] {
 	0x90, 0x90, 0x90,                               // nop (3x)
 	0xBB, 0x00, 0x00, 0x00, 0x00,                   // mov ebx, 0x0
 	0xE9                                            // jmp <somewhere>
 };
 
-// 10.14.6, 10.15.7, 11.6.4, 12.2.1, 13.0.0b3
+// 10.14.6, 10.15.7, 11.7.10, 12.7.6, 13.7
 // Make sure there's only one match in each dyld shared cache (especially if we don't have the code to limit the patch to the CoreDisplay part of the cache)
 // LANG=C grep -obUa "\x8B\x42\x20\xBB\x01\x00\x00\x00\xA8\x01\x0F\x85" /Volumes/*/S*/L*/dyld/dyld_shared_cache_x86_64* /Volumes/*/S*/L*/F*/CoreDisplay.framework/Versions/A/CoreDisplay
 // Don't run this test on a Mac that has dyld patches enabled - the file may appear to have patches applied to it but that's only in RAM.
-static const uint8_t frameworkFind_10_14[] {
+static const uint8_t CheckTimingWithRange_Find_10_14[] {
 	0x8B, 0x42, 0x20,                               // mov eax, dword [rdx+0x20]
 	0xBB, 0x01, 0x00, 0x00, 0x00,                   // mov ebx, 0x1
 	0xA8, 0x01,                                     // test al, 0x1
 	0x0F, 0x85                                      // jne <somewhere>
 };
 
-static const uint8_t frameworkRepl_10_14[] {
+static const uint8_t CheckTimingWithRange_Repl_10_14[] {
 	0x90, 0x90, 0x90, 0x90, 0x90, 0x90,             // nop (6x)
 	0xBB, 0x00, 0x00, 0x00, 0x00,                   // mov ebx, 0x0
 	0xE9                                            // jmp <somewhere>
 };
 
-static UserPatcher::BinaryModPatch frameworkPatch {
-	CPU_TYPE_X86_64, 0, // flags
-	NULL, NULL, 0, // find, replace, size
-	0, // skip  = 0 -> replace all occurrences
-	1, // count = 1 -> 1 set of hex inside the target binaries
-	UserPatcher::FileSegment::SegmentTextText,
-	1 // enabled
+// 14.7, 15.0
+// Patch created by kokozaurs https://github.com/oskarstr
+static const uint8_t CheckTimingWithRange_Find_14_0[] = {
+	0x8B, 0x42, 0x20,                               // mov eax, dword [rdx+0x20]
+	0x41, 0xBF, 0x01, 0x00, 0x00, 0x00,             // mov r15d, 0x1
+	0xA8, 0x01,                                     // test al, 0x1
+	0x0F, 0x85                                      // jne <somewhere>
 };
 
-static UserPatcher::BinaryModInfo binaryMod { NULL, &frameworkPatch, 1 };
+static const uint8_t CheckTimingWithRange_Repl_14_0[] = {
+	0x90, 0x90, 0x90, 0x90, 0x90, 0x90,             // nop (6x)
+	0x41, 0xBF, 0x00, 0x00, 0x00, 0x00,             // mov r15d, 0x0
+	0xE9                                            // jmp <somewhere>
+};
 
+static UserPatcher::BinaryModPatch binaryPatches[1];
+static UserPatcher::BinaryModInfo binaryMod = { NULL, binaryPatches, 0 };
 static UserPatcher::ProcInfo procInfo { NULL, 0, 1 };
 
 CDF *CDF::callbackCDF;
@@ -219,30 +225,45 @@ void CDF::init() {
 	callbackCDF = this;
 	lilu.onKextLoadForce(kextList, arrsize(kextList));
 
-	// nothing should be applied when -cdfoff is passed
-	if (!checkKernelArgument("-cdfoff")) {
-		#define onepatch(_proc, _bin, _patch, _ver) \
-		if (_ver) { \
-			procInfo.path = procWindowServer_ ## _proc; \
-			procInfo.len = sizeof(procWindowServer_ ## _proc) - 1; \
-			binaryMod.path = binary ## _bin ## Framework; \
-			frameworkPatch.find = frameworkFind_ ## _patch; \
-			frameworkPatch.replace = frameworkRepl_ ## _patch; \
-			frameworkPatch.size = arrsize(frameworkFind_ ## _patch); \
-		}
-		if (0) {}
-		else onepatch(ApplicationServices, IOKit      , 10_4   ,  getKernelVersion() == KernelVersion::Tiger)
-		else onepatch(ApplicationServices, IOKit      , 10_5   ,  getKernelVersion() == KernelVersion::Leopard)
-		else onepatch(ApplicationServices, IOKit      , 10_6   ,  getKernelVersion() == KernelVersion::SnowLeopard)
-		else onepatch(ApplicationServices, IOKit      , 10_7   ,  getKernelVersion() == KernelVersion::Lion)
-		else onepatch(CoreGraphics       , IOKit      , 10_8   ,  getKernelVersion() == KernelVersion::MountainLion)
-		else onepatch(CoreGraphics       , IOKit      , 10_9   ,  getKernelVersion() >= KernelVersion::Mavericks  && getKernelVersion() <= KernelVersion::ElCapitan)
-		else onepatch(Skylight           , CoreDisplay, 10_9   , (getKernelVersion() == KernelVersion::HighSierra && getKernelMinorVersion() <  5) || getKernelVersion() == KernelVersion::Sierra)
-		else onepatch(Skylight           , CoreDisplay, 10_13_4,  getKernelVersion() == KernelVersion::HighSierra && getKernelMinorVersion() >= 5)
-		else onepatch(Skylight           , CoreDisplay, 10_14  ,  getKernelVersion() >= KernelVersion::Mojave)
+	UserPatcher::BinaryModPatch *currentPatch = binaryPatches;
+	int numPatches = 0;
+
+	#define onepatch(_process, _binary, _segment, _patchwhat, _patchversion, _osversion) \
+	if (_osversion) { \
+		procInfo.path = procWindowServer_ ## _process; \
+		procInfo.len = sizeof(procWindowServer_ ## _process) - 1; \
+		binaryMod.path = binary ## _binary ## Framework; \
+		*currentPatch = { \
+			.cpu = CPU_TYPE_X86_64, .flags = 0, \
+			.find = _patchwhat ## _Find_ ## _patchversion, \
+			.replace = _patchwhat ## _Repl_ ## _patchversion, \
+			.size = arrsize(_patchwhat ## _Find_ ## _patchversion), \
+			.skip = 0, /* replace all occurrences */ \
+			.count = 1, /* 1 occurrence to be replaced */ \
+			.segment = UserPatcher::FileSegment::Segment ## _segment, \
+			.section = UserPatcher::ProcInfo::SectionNotDisabled \
+		}; \
+		SYSLOG("cdf", "Added user patch. what:%s process:%s binary:%s version:%s", #_patchwhat, #_process, #_binary, #_patchversion); \
+		currentPatch++; \
+		numPatches++; \
 	}
-	
-	if (procInfo.path) {
+
+	if (checkKernelArgument("-cdfon")) {
+		if (0) {}
+		else onepatch(ApplicationServices, IOKit      , TextText , CheckTimingWithRange, 10_4   ,  getKernelVersion() == KernelVersion::Tiger)
+		else onepatch(ApplicationServices, IOKit      , TextText , CheckTimingWithRange, 10_5   ,  getKernelVersion() == KernelVersion::Leopard)
+		else onepatch(ApplicationServices, IOKit      , TextText , CheckTimingWithRange, 10_6   ,  getKernelVersion() == KernelVersion::SnowLeopard)
+		else onepatch(ApplicationServices, IOKit      , TextText , CheckTimingWithRange, 10_7   ,  getKernelVersion() == KernelVersion::Lion)
+		else onepatch(CoreGraphics       , IOKit      , TextText , CheckTimingWithRange, 10_8   ,  getKernelVersion() == KernelVersion::MountainLion)
+		else onepatch(CoreGraphics       , IOKit      , TextText , CheckTimingWithRange, 10_9   ,  getKernelVersion() >= KernelVersion::Mavericks  && getKernelVersion() <= KernelVersion::ElCapitan)
+		else onepatch(Skylight           , CoreDisplay, TextText , CheckTimingWithRange, 10_9   , (getKernelVersion() == KernelVersion::HighSierra && getKernelMinorVersion() <  5) || getKernelVersion() == KernelVersion::Sierra)
+		else onepatch(Skylight           , CoreDisplay, TextText , CheckTimingWithRange, 10_13_4,  getKernelVersion() == KernelVersion::HighSierra && getKernelMinorVersion() >= 5)
+		else onepatch(Skylight           , CoreDisplay, TextText , CheckTimingWithRange, 10_14  ,  getKernelVersion() >= KernelVersion::Mojave && getKernelVersion() <= KernelVersion::Ventura)
+		else onepatch(Skylight           , CoreDisplay, TextText , CheckTimingWithRange, 14_0   ,  getKernelVersion() >= KernelVersion::Sonoma)
+	}
+
+	if (numPatches) {
+		binaryMod.count = numPatches;
 		currentProcInfo = &procInfo;
 		currentModInfo = &binaryMod;
 		lilu.onProcLoadForce(currentProcInfo, 1, nullptr, nullptr, currentModInfo, 1);
@@ -290,7 +311,9 @@ void CDF::processKernel(KernelPatcher &patcher, DeviceInfo *info) {
 		for (size_t i = 0; i < currentModInfo->count; i++)
 			currentModInfo->patches[i].section = UserPatcher::ProcInfo::SectionDisabled;
 	}
-	DBGLOG("cdf", "] CDF::processKernel patchNVIDIA:%d patchCommon:%d disableHDMI20:%d", patchNVIDIA, patchCommon, disableHDMI20);
+	DBGLOG("cdf", "] CDF::processKernel patchNVIDIA:%d patchCommon:%d disableHDMI20:%d patchesUser:%d",
+		patchNVIDIA, patchCommon, disableHDMI20, currentModInfo ? (int)currentModInfo->count : 0
+	);
 }
 
 bool CDF::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t address, size_t size) {
