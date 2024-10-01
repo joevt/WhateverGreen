@@ -147,6 +147,7 @@ Read [FAQs](./Manual/) and avoid asking any questions. No support is provided fo
 | Boot argument 	| DeviceProperties 	| Description 	|
 |---	|---	|---	|
 | `wegtree=1` 		| `rebuild-device-tree` property 	| Force device renaming on Apple FW 	|
+| `dscbpp=BPP` 		| N/A 	| Change the DSC target BPP value from the default 12. Set this to a lower value (minimum 6 or 8) to allow a higher pixel clock, refresh rate, or resolution for displays or adapters that support DSC. Higher scan rates may require a timing range patch, such as the one provided by the `-cdfon` option. 	|
 
 #### Credits
 
