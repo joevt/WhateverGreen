@@ -2387,7 +2387,7 @@ To use this patch, add the `enable-hdmi20` property to `IGPU` or use the `-cdfon
 
 ![hdmi20](./Img/hdmi20.png)
 
-`-igfxmpc` is the preferred approach to bypass the 450 MHz pixel clock limit, as `-cdfon` depends on the userspace patcher (not implemented for macOS 11+).
+`-igfxmpc` is the preferred approach to bypass the 450 MHz pixel clock limit, as `-cdfon` depends on the userspace patcher.
 
 ## Disabling a discrete graphics card
 
